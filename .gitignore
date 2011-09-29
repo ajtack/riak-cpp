@@ -1,1 +1,4 @@
 *.o
+*.sconsign.dblite
+build
+libstorage.a
