@@ -69,18 +69,12 @@ class storage::optional_value
     
     /*! Removes the value mapped here from the store, asynchronously. */
     boost::shared_future<bool> unmap ();
-      
-    /*! \returns True iff a value exists here. False means "no value". */
-    operator bool () const;
-    bool operator! () const { return (not static_cast<bool>(*this)); }
     
     /*!
-     * \pre this object must evaluate to true.
-     * \returns The value present in this key location.
+     * Begins an asynchronous read of this value from the store. The retrieved value will not be
+     * cached; the only memory of it will be given with the returned future.
      */
-    const storage::value& operator* () const  { return value(); }
-    const storage::value& operator-> () const { return value(); }
-    const storage::value& value () const;
+    boost::shared_future<boost::optional<storage::value>> fetch () const;
     
   private:
     std::shared_ptr<implementation> pimpl_;  /*!< The single concrete value referred to by all copies by a particular key. */

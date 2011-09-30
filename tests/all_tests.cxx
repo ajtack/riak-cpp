@@ -11,14 +11,20 @@ TEST(InsertionEventuallySucceeds) {
     }
     
     CHECK(t.has_value());
-    CHECK(t.get()->value() == "banana");
 }
 
 
 TEST(UnmappedKeysAreFalsy) {
     storage s;
-    auto t = s["apple"];
-    CHECK(not t);
+
+    auto retrieved = s["apple"].fetch();
+    {
+        UNITTEST_TIME_CONSTRAINT(50);
+        retrieved.wait();
+    }
+    
+    CHECK(retrieved.has_value());
+    CHECK(not retrieved.get());
 }
 
 
@@ -49,6 +55,49 @@ TEST(DeletingMappedKeysRemovesThem) {
         deletion.wait();
     }
     
-    auto retrieved = s["apple"];
-    CHECK(not retrieved);
+    auto retrieved = s["apple"].fetch();
+    {
+        UNITTEST_TIME_CONSTRAINT(50);
+        retrieved.wait();
+    }
+    
+    CHECK(retrieved.has_value());
+    CHECK(not retrieved.get());
+}
+
+
+TEST(AsynchronousFetchOfUnmappedValueEventuallySucceeds)
+{
+    storage s;
+    
+    auto r = s["apple"].fetch();
+    {
+        UNITTEST_TIME_CONSTRAINT(50);
+        r.wait();
+    }
+    
+    CHECK(r.has_value());
+    CHECK(not r.get());
+}
+
+
+TEST(AsynchronousFetchOfMappedValueEventuallySucceeds)
+{
+    storage s;
+    
+    auto stored = s["apple"].set("banana");
+    {
+        UNITTEST_TIME_CONSTRAINT(50);
+        stored.wait();
+    }
+    
+    auto r = s["apple"].fetch();
+    {
+        UNITTEST_TIME_CONSTRAINT(50);
+        r.wait();
+    }
+    
+    CHECK(r.has_value());
+    CHECK(!! r.get());
+    CHECK(*r.get() == "banana");
 }
