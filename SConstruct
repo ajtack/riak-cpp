@@ -1,6 +1,6 @@
 import os
 
-VariantDir('build', 'source')
+VariantDir('build/library', 'source')
 common_env = Environment(
         ENV = os.environ,
         CXXFLAGS = ['--std=c++0x'],
@@ -9,14 +9,20 @@ common_env = Environment(
 
 if ARGUMENTS.get('VERBOSE') != 'yes':
     common_env.Append(
-            CXXCOMSTR =  '(compile)  $SOURCES',
-            LINKCOMSTR = '(link)     $TARGET'
+            CXXCOMSTR =    '(compile)  $SOURCES',
+            LINKCOMSTR =   '(link)     $TARGET',
+            ARCOMSTR =     '(archive)  $TARGET',
+            RANLIBCOMSTR = '(ranlib)   $TARGET'
     )
 
 debug_env = common_env.Clone(CCFLAGS = ['-O0', '-g'])
-sources = Glob('build/*.cxx')
 
 if ARGUMENTS.get('DEBUG') == 'yes':
-    debug_env.StaticLibrary('storage', sources)
+    env = debug_env
 else:
-    common_env.StaticLibrary('storage', sources)
+    env = common_env
+    
+sources = Glob('build/*.cxx')
+library = env.StaticLibrary('storage', sources, build_dir='build/library')
+tests = SConscript('tests/SConscript', variant_dir='build/test', exports=['env', 'library'])
+AddPostAction(tests, tests[0].path)

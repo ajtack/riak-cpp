@@ -8,6 +8,22 @@
 #include <memory>
 #include <stdexcept>
 
+/*!
+ * This key value storage may be thought of as a simple hash table, only accessible by key, with one primary
+ * exception: Assignments to this hash table return immediately, but resolve asynchronously to a future value.
+ * You may, for instance, block on a write to this hash table, and thus be sure the value was delivered:
+ *
+ *    storage s;
+ *    auto result = s["breakfast"].set("ham and eggs");
+ *    result.wait();
+ *    if (result.has_value())
+ *        assert(*s["breakfast"] == "ham and eggs")
+ *    else
+ *        cerr << "Write failed!" << endl;
+ *
+ * You may also "fire and forget" the write, by eliding everything after set(). A failure will be logged by
+ * the implementation, but it will not invalidate future accesses of any keys in s.
+ */
 class storage
 {
   public:
@@ -16,6 +32,7 @@ class storage
   
     /*! \post the table is empty. */
     storage ();
+    ~storage ();
     
     /*! An exception type indicating that an assigment at a key has failed. */
     class failed_assignment;
@@ -39,45 +56,32 @@ class storage
 
 class storage::optional_value
 {
+  private:
+    class implementation;
+      
   protected:
     friend class storage;
-    
-    /*! Builds an optional value that evaluates to False. */
     optional_value (const storage::key& k);
+    optional_value (std::shared_ptr<implementation>& p)
+      : pimpl_(p)
+    {   }
     
   public:
+    /*! Begins an asynchronous assignment to the value keyed here. */
+    boost::shared_future<std::unique_ptr<optional_value>> set (const storage::value& v);
+      
     /*! \returns True iff a value exists here. False means "no value". */
     operator bool () const;
     
-    /*! A type which supports asynchronous assignments via std::future. */
-    class async_value_proxy;
-    
     /*!
      * \pre this object must evaluate to true.
-     * \returns The set value made available.
+     * \returns The value present in this key location.
      */
-    std::unique_ptr<async_value_proxy> operator* ();
     const storage::value& operator* () const;
-    std::unique_ptr<async_value_proxy> operator-> ();
     const storage::value& operator-> () const;
     
   private:
-    class implementation;
     std::shared_ptr<implementation> pimpl_;  /*!< The single concrete value referred to by all copies by a particular key. */
-};
-
-
-class storage::optional_value::async_value_proxy
-{
-  public:
-    virtual const storage::value& cached_value () const = 0;
-
-    /*!
-     * Sends an asynchronous request to assign to this value.
-     * \return a future value which will return "true" to is_ready() when the request has been successfully completed. This future
-     *     will raise a failed_assignment exception
-     */
-    virtual boost::shared_future<std::unique_ptr<async_value_proxy>> operator= (std::string& new_value) = 0;
 };
 
 

@@ -1,0 +1,7 @@
+Import('env')
+Import('library')
+
+unit_tests = env.Program('test', ['all_tests.cxx', 'main.cxx'], INCLUDE=['library'], LIBS=['UnitTest++', library, 'boost_thread-mt'])
+env.Alias('test', [unit_tests], unit_tests[0].path)
+env.AlwaysBuild('test')
+Return('unit_tests')
