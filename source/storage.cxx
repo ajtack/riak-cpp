@@ -78,3 +78,10 @@ storage::optional_value::set (const std::string& new_value)
     promise.set_value(std::move(new_value_proxy));
     return promise.get_future();
 }
+
+
+const storage::value& storage::optional_value::value () const
+{
+    assert(pimpl_->value);
+    return *pimpl_->value;
+}

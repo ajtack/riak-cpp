@@ -77,8 +77,9 @@ class storage::optional_value
      * \pre this object must evaluate to true.
      * \returns The value present in this key location.
      */
-    const storage::value& operator* () const;
-    const storage::value& operator-> () const;
+    const storage::value& operator* () const  { return value(); }
+    const storage::value& operator-> () const { return value(); }
+    const storage::value& value () const;
     
   private:
     std::shared_ptr<implementation> pimpl_;  /*!< The single concrete value referred to by all copies by a particular key. */

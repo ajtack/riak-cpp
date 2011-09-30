@@ -11,6 +11,7 @@ TEST(InsertionEventuallySucceeds) {
     }
     
     CHECK(t.has_value());
+    CHECK(t.get()->value() == "banana");
 }
 
 
