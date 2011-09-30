@@ -18,5 +18,37 @@ TEST(InsertionEventuallySucceeds) {
 TEST(UnmappedKeysAreFalsy) {
     storage s;
     auto t = s["apple"];
-    assert(not t);
+    CHECK(not t);
+}
+
+
+TEST(DeletingUnmappedKeysIsAllowed) {
+    storage s;
+    auto r = s["apple"].unmap();
+    {
+        UNITTEST_TIME_CONSTRAINT(50);
+        r.wait();
+    }
+    
+    CHECK(r.has_value());
+    CHECK(r.get() == false);
+}
+
+
+TEST(DeletingMappedKeysRemovesThem) {
+    storage s;
+    auto stored = s["apple"].set("banana");
+    {
+        UNITTEST_TIME_CONSTRAINT(50);
+        stored.wait();
+    }
+    
+    auto deletion = s["apple"].unmap();
+    {
+        UNITTEST_TIME_CONSTRAINT(50);
+        deletion.wait();
+    }
+    
+    auto retrieved = s["apple"];
+    CHECK(not retrieved);
 }

@@ -80,6 +80,16 @@ storage::optional_value::set (const std::string& new_value)
 }
 
 
+boost::shared_future<bool> storage::optional_value::unmap ()
+{
+    bool value_existed = pimpl_->value;
+    pimpl_->value.reset();
+    boost::promise<bool> promise;
+    promise.set_value(value_existed);
+    return promise.get_future();
+}
+
+
 const storage::value& storage::optional_value::value () const
 {
     assert(pimpl_->value);
