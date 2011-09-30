@@ -12,3 +12,10 @@ TEST(InsertionEventuallySucceeds) {
     
     CHECK(t.has_value());
 }
+
+
+TEST(UnmappedKeysAreFalsy) {
+    storage s;
+    auto t = s["apple"];
+    assert(not t);
+}

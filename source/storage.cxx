@@ -61,6 +61,12 @@ storage::optional_value::optional_value (const storage::key& k)
 {   }
 
 
+storage::optional_value::operator bool () const
+{
+    return pimpl_->value;
+}
+
+
 boost::shared_future<std::unique_ptr<storage::optional_value>>
 storage::optional_value::set (const std::string& new_value)
 {
