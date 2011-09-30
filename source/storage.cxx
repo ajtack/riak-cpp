@@ -61,15 +61,12 @@ storage::optional_value::optional_value (const storage::key& k)
 {   }
 
 
-boost::shared_future<std::unique_ptr<storage::optional_value>>
+boost::shared_future<size_t>
 storage::optional_value::set (const std::string& new_value)
 {
-    typedef std::unique_ptr<optional_value> pointer;
-    
-    boost::promise<pointer> promise;
+    boost::promise<size_t> promise;
     pimpl_->value = new_value;
-    pointer new_value_proxy(new optional_value(pimpl_));
-    promise.set_value(std::move(new_value_proxy));
+    promise.set_value(0);
     return promise.get_future();
 }
 

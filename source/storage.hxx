@@ -64,8 +64,11 @@ class storage::optional_value
     {   }
     
   public:
-    /*! Begins an asynchronous assignment to the value keyed here. */
-    boost::shared_future<std::unique_ptr<optional_value>> set (const storage::value& v);
+    /*!
+     * Begins an asynchronous assignment to the value keyed here.
+     * \return The time (in milliseconds) required to complete the storage.
+     */
+    boost::shared_future<size_t> set (const storage::value& v);
     
     /*! Removes the value mapped here from the store, asynchronously. */
     boost::shared_future<bool> unmap ();
