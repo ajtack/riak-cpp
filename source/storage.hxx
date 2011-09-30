@@ -34,9 +34,6 @@ class storage
     storage ();
     ~storage ();
     
-    /*! An exception type indicating that an assigment at a key has failed. */
-    class failed_assignment;
-    
     /*! A return type for accessors which may be able to respond, "no item here." */
     class optional_value;
     
@@ -83,22 +80,4 @@ class storage::optional_value
     
   private:
     std::shared_ptr<implementation> pimpl_;  /*!< The single concrete value referred to by all copies by a particular key. */
-};
-
-
-struct storage::failed_assignment
-      : public std::exception
-{
-    failed_assignment (const std::string& key, const std::string& value)
-      : key(key),
-        value(value)
-    {   }
-    
-    ~failed_assignment () throw()
-    {   }
-    
-    virtual const char* what () const throw();
-    
-    const std::string key;
-    const std::string value;
 };
