@@ -25,4 +25,4 @@ else:
 sources = Glob('build/*.cxx')
 library = env.StaticLibrary('storage', sources, build_dir='build/library')
 tests = SConscript('tests/SConscript', variant_dir='build/test', exports=['env', 'library'])
-AddPostAction(tests, tests[0].path)
+AddPostAction(tests, tests[0].path + ' tests/tests.cfg')

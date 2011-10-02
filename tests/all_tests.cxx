@@ -1,5 +1,6 @@
 #include <boost/lexical_cast.hpp>
 #include <boost/thread.hpp>
+#include <configuration.hxx>
 #include <UnitTest++/UnitTest++.h>
 #include <storage.hxx>
 
@@ -8,7 +9,7 @@ TEST(InsertionEventuallySucceeds) {
     auto t = s["apple"].set("banana");
     
     {
-        UNITTEST_TIME_CONSTRAINT(50);
+        UNITTEST_TIME_CONSTRAINT(configuration::request_timeout);
         t.wait();
     }
     
@@ -21,7 +22,7 @@ TEST(UnmappedKeysAreFalsy) {
 
     auto retrieved = s["apple"].fetch();
     {
-        UNITTEST_TIME_CONSTRAINT(50);
+        UNITTEST_TIME_CONSTRAINT(configuration::request_timeout);
         retrieved.wait();
     }
     
@@ -34,7 +35,7 @@ TEST(DeletingUnmappedKeysIsAllowed) {
     storage s;
     auto r = s["apple"].unmap();
     {
-        UNITTEST_TIME_CONSTRAINT(50);
+        UNITTEST_TIME_CONSTRAINT(configuration::request_timeout);
         r.wait();
     }
     
@@ -47,19 +48,19 @@ TEST(DeletingMappedKeysRemovesThem) {
     storage s;
     auto stored = s["apple"].set("banana");
     {
-        UNITTEST_TIME_CONSTRAINT(50);
+        UNITTEST_TIME_CONSTRAINT(configuration::request_timeout);
         stored.wait();
     }
     
     auto deletion = s["apple"].unmap();
     {
-        UNITTEST_TIME_CONSTRAINT(50);
+        UNITTEST_TIME_CONSTRAINT(configuration::request_timeout);
         deletion.wait();
     }
     
     auto retrieved = s["apple"].fetch();
     {
-        UNITTEST_TIME_CONSTRAINT(50);
+        UNITTEST_TIME_CONSTRAINT(configuration::request_timeout);
         retrieved.wait();
     }
     
@@ -74,7 +75,7 @@ TEST(AsynchronousFetchOfUnmappedValueEventuallySucceeds)
     
     auto r = s["apple"].fetch();
     {
-        UNITTEST_TIME_CONSTRAINT(50);
+        UNITTEST_TIME_CONSTRAINT(configuration::request_timeout);
         r.wait();
     }
     
@@ -89,13 +90,13 @@ TEST(AsynchronousFetchOfMappedValueEventuallySucceeds)
     
     auto stored = s["apple"].set("banana");
     {
-        UNITTEST_TIME_CONSTRAINT(50);
+        UNITTEST_TIME_CONSTRAINT(configuration::request_timeout);
         stored.wait();
     }
     
     auto r = s["apple"].fetch();
     {
-        UNITTEST_TIME_CONSTRAINT(50);
+        UNITTEST_TIME_CONSTRAINT(configuration::request_timeout);
         r.wait();
     }
     
