@@ -12,6 +12,7 @@ struct storage::implementation
 {
     typedef std::unordered_map<storage::key, storage::optional_value> hash_table;
     hash_table records;
+    boost::mutex mutex;
 };
 
 
@@ -26,6 +27,9 @@ storage::~storage ()
 
 storage::optional_value& storage::operator[] (const storage::key& k)
 {
+    // Unless each hashed value is an active object, we can't do better than a plain mutex.
+    boost::unique_lock<boost::mutex> protect(pimpl_->mutex);
+    
     implementation::hash_table::iterator e = pimpl_->records.find(k);
     if (e != pimpl_->records.end()) {
         return e->second;

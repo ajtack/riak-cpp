@@ -1,3 +1,5 @@
+#include <boost/lexical_cast.hpp>
+#include <boost/thread.hpp>
 #include <UnitTest++/UnitTest++.h>
 #include <storage.hxx>
 
@@ -100,4 +102,28 @@ TEST(AsynchronousFetchOfMappedValueEventuallySucceeds)
     CHECK(r.has_value());
     CHECK(!! r.get());
     CHECK(*r.get() == "banana");
+}
+
+
+void assign_thousand_times (std::shared_ptr<storage> s)
+{
+    using boost::lexical_cast;
+    
+    // It is unbelievable how much work we can do before my laptop starts choking.
+    for (size_t i = 0; i < 0xFFFFFFFFFFFFFFFF; ++i) {
+        (*s)[lexical_cast<std::string>(i)].set("abcdef");
+    }
+}
+
+
+TEST(ParallelQueriesShouldNotCrash)
+{
+    std::shared_ptr<storage> s(new storage);
+    
+    std::vector<boost::thread*> threads;
+    boost::thread_group tg;
+    
+    for (size_t i = 0; i < 500; ++i) {
+        threads.push_back(tg.create_thread(std::bind(assign_thousand_times, s)));
+    }
 }
