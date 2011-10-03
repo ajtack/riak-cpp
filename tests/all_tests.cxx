@@ -2,10 +2,10 @@
 #include <boost/thread.hpp>
 #include <configuration.hxx>
 #include <UnitTest++/UnitTest++.h>
-#include <storage.hxx>
+#include <store.hxx>
 
 TEST(InsertionEventuallySucceeds) {
-    storage s;
+    riak::store s;
     auto t = s["apple"].set("banana");
     
     {
@@ -18,7 +18,7 @@ TEST(InsertionEventuallySucceeds) {
 
 
 TEST(UnmappedKeysAreFalsy) {
-    storage s;
+    riak::store s;
 
     auto retrieved = s["apple"].fetch();
     {
@@ -32,7 +32,7 @@ TEST(UnmappedKeysAreFalsy) {
 
 
 TEST(DeletingUnmappedKeysIsAllowed) {
-    storage s;
+    riak::store s;
     auto r = s["apple"].unmap();
     {
         UNITTEST_TIME_CONSTRAINT(configuration::request_timeout);
@@ -45,7 +45,7 @@ TEST(DeletingUnmappedKeysIsAllowed) {
 
 
 TEST(DeletingMappedKeysRemovesThem) {
-    storage s;
+    riak::store s;
     auto stored = s["apple"].set("banana");
     {
         UNITTEST_TIME_CONSTRAINT(configuration::request_timeout);
@@ -71,7 +71,7 @@ TEST(DeletingMappedKeysRemovesThem) {
 
 TEST(AsynchronousFetchOfUnmappedValueEventuallySucceeds)
 {
-    storage s;
+    riak::store s;
     
     auto r = s["apple"].fetch();
     {
@@ -86,7 +86,7 @@ TEST(AsynchronousFetchOfUnmappedValueEventuallySucceeds)
 
 TEST(AsynchronousFetchOfMappedValueEventuallySucceeds)
 {
-    storage s;
+    riak::store s;
     
     auto stored = s["apple"].set("banana");
     {
@@ -106,7 +106,7 @@ TEST(AsynchronousFetchOfMappedValueEventuallySucceeds)
 }
 
 
-void assign_thousand_times (std::shared_ptr<storage> s)
+void assign_thousand_times (std::shared_ptr<riak::store> s)
 {
     using boost::lexical_cast;
     
@@ -119,7 +119,7 @@ void assign_thousand_times (std::shared_ptr<storage> s)
 
 TEST(ParallelQueriesShouldNotCrash)
 {
-    std::shared_ptr<storage> s(new storage);
+    std::shared_ptr<riak::store> s(new riak::store);
     
     std::vector<boost::thread*> threads;
     boost::thread_group tg;

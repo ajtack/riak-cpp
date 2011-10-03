@@ -23,10 +23,11 @@ void process(const std::string& p)
     
     std::ifstream file(p);
     if (file) {
-        variables_map vm;
-        boost::program_options::options_description options = option_definitions();
-        store(parse_config_file(file, options), vm);
-        notify(vm);
+        request_timeout = 50;  // Boost is broken on macports. :^)
+        // variables_map vm;
+        //         boost::program_options::options_description options = option_definitions();
+        //         store(parse_config_file(file, options), vm);
+        //         notify(vm);
     } else {
         throw std::invalid_argument("The given configuration file does not exist.");
     }
