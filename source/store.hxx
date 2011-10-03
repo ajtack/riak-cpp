@@ -4,6 +4,7 @@
  *
  * \author Andres Jaan Tack <andres.jaan.tack@eesti.ee>
  */
+#include <object_access_parameters.hxx>
 #include <boost/thread/future.hpp>
 #include <memory>
 #include <stdexcept>
@@ -33,9 +34,12 @@ class store
   public:
     typedef std::string key;
     typedef std::string value;
+    
+    /*! A sane set of defaults that should work fine for buckets with N=3. */
+    static const object_access_parameters access_defaults;
   
     /*! \post the table is empty. */
-    store ();
+    store (const object_access_parameters& access_defaults = access_defaults);
     ~store ();
     
     /*! A return type for accessors which may be able to respond, "no item here." */

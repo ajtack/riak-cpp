@@ -20,7 +20,18 @@ struct store::implementation
 };
 
 
-store::store ()
+const object_access_parameters store::access_defaults = object_access_parameters()
+    .with_r(2)
+    .with_pr(2)
+    .with_w(2)
+    .with_pw(2)
+    .with_dw(0)
+    .with_rw(2)
+    .with_basic_quorum()
+    .with_notfound_ok();
+
+
+store::store (const object_access_parameters& access_defaults)
   : pimpl_(new implementation())
 {   }
 
