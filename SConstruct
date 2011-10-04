@@ -22,7 +22,7 @@ if ARGUMENTS.get('DEBUG') == 'yes':
 else:
     env = common_env
     
-sources = Glob('build/*.cxx')
+sources = Glob('build/library/*.cxx')
 library = env.StaticLibrary('storage', sources, build_dir='build/library')
 tests = SConscript('tests/SConscript', variant_dir='build/test', exports=['env', 'library'])
 AddPostAction(tests, tests[0].path + ' tests/tests.cfg')

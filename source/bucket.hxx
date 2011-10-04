@@ -1,0 +1,62 @@
+/*!
+ * \file
+ * Implements the "bucket" concept from a Riak store.
+ *
+ * \author Andres Jaan Tack <ajtack@gmail.com>
+ */
+#pragma once
+#include <boost/thread/future.hpp>
+#include <core_types.hxx>
+#include <object.hxx>
+
+//=============================================================================
+namespace riak {
+//=============================================================================
+
+class store;
+
+/*!
+ * A remote collection of "objects" indexed by "key". Copying a particular instance does not modify
+ * the remote store; this is a _reference_ to that bucket and allows access to underlying data.
+ * 
+ * As per http://wiki.basho.com/What-is-Riak%3F.html:
+ * "Buckets are essentially a flat namespace in Riak and have little significance beyond their
+ * ability to allow the same key name to exist in multiple buckets and to provide some per-bucket
+ * configurability for things like replication factor and pre/post-commit hooks."
+ */
+class bucket
+{
+  public:
+    /*!
+     * Generates a reference to an object (possibly as-yet nonexistent) mapped at the given key.
+     * With this reference, you can access and make changes to the store itself.
+     */
+          object operator[] (const key& k);
+    const object operator[] (const key& k) const { return const_cast<bucket&>(*this)[k]; }
+    
+    /*! Deletes any value mapped at the given key, asynchronously. */
+    boost::shared_future<bool> unmap (const key& k ); // object_access_parameters& p = store_.object_access_defaults());
+    
+    // boost::shared_future<void> set_properties (const properties& p);
+    // boost::shared_future<std::pair<key, std::shared_ptr<properties>>> fetch_properties () const;
+    
+    const ::riak::key& key () const { return key_; }
+    
+  protected:
+    friend class store;
+    friend class object;
+    
+    /*! \param k is the key which indexed this particular bucket in the store. */
+    bucket (store& s, const ::riak::key& k)
+      : store_(s),
+        key_(k)
+    {   }
+    
+  private:
+    store& store_;
+    const ::riak::key key_;
+};
+
+//=============================================================================
+}   // namespace riak
+//=============================================================================
