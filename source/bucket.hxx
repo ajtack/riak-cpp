@@ -5,6 +5,7 @@
  * \author Andres Jaan Tack <ajtack@gmail.com>
  */
 #pragma once
+#include <boost/system/error_code.hpp>
 #include <boost/thread/future.hpp>
 #include <core_types.hxx>
 #include <object.hxx>
@@ -34,8 +35,16 @@ class bucket
           object operator[] (const key& k);
     const object operator[] (const key& k) const { return const_cast<bucket&>(*this)[k]; }
     
-    /*! Deletes any value mapped at the given key, asynchronously. */
-    boost::shared_future<bool> unmap (const key& k ); // object_access_parameters& p = store_.object_access_defaults());
+    typedef std::function<void(const boost::system::error_code&, bool)> deletion_result_handler;
+    
+    /*! Deletes any value mapped at the given key asynchronously, with results given as per the returned future. */
+    boost::unique_future<void> unmap (const key& k);
+    
+    /*!
+     * Deletes any value mapped at the given key asynchronously, with the result given to a callback.
+     * \param h assuming no error, will be called with the second parameter indicating whether an item was deleted or not.
+     */
+    void unmap (const key& k, const deletion_result_handler& h);
     
     // boost::shared_future<void> set_properties (const properties& p);
     // boost::shared_future<std::pair<key, std::shared_ptr<properties>>> fetch_properties () const;
@@ -46,15 +55,20 @@ class bucket
     friend class store;
     friend class object;
     
-    /*! \param k is the key which indexed this particular bucket in the store. */
-    bucket (store& s, const ::riak::key& k)
+    /*!
+     * \param k is the key which indexed this particular bucket in the store.
+     * \param p will be used for unmapping operations by default.
+     */
+    bucket (store& s, const ::riak::key& k, const object_access_parameters& p)
       : store_(s),
-        key_(k)
+        key_(k),
+        default_access_parameters_(p)
     {   }
     
   private:
     store& store_;
     const ::riak::key key_;
+    const object_access_parameters& default_access_parameters_;
 };
 
 //=============================================================================

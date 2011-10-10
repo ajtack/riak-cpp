@@ -4,21 +4,13 @@
  *
  * \author Andres Jaan Tack <andres.jaan.tack@eesti.ee>
  */
+#include <boost/asio/io_service.hpp>
+#include <boost/asio/connect.hpp>
 #include <store.hxx>
-#include <boost/optional.hpp>
-#include <unordered_map>
 
 //=============================================================================
 namespace riak {
 //=============================================================================
-
-struct store::implementation
-{    
-    typedef std::unordered_map<key, ::riak::bucket> hash_table;
-    hash_table buckets;
-    boost::mutex mutex;
-};
-
 
 const object_access_parameters store::access_defaults = object_access_parameters()
     .with_r(2)
@@ -31,10 +23,17 @@ const object_access_parameters store::access_defaults = object_access_parameters
     .with_notfound_ok();
 
 
-store::store (const object_access_parameters& d)
-  : pimpl_(new implementation()),
-    access_defaults_(d)
-{   }
+store::store (const std::string& node_address, boost::asio::io_service& ios, const object_access_parameters& d)
+  : access_defaults_(d),
+    node_address_(node_address),
+    socket_(ios)
+{
+    using boost::asio::ip::tcp;
+    tcp::resolver resolver(ios);
+    tcp::resolver::query query(node_address, "node");
+    tcp::resolver::iterator endpoint_iterator = resolver.resolve(query);
+    boost::asio::connect(socket_, endpoint_iterator);
+}
 
 
 store::~store ()
@@ -43,16 +42,8 @@ store::~store ()
 
 bucket store::bucket (const key& k)
 {
-    // Unless each hashed value is an active object, we can't do better than a plain mutex.
-    boost::unique_lock<boost::mutex> protect(pimpl_->mutex);
-    
-    implementation::hash_table::iterator e = pimpl_->buckets.find(k);
-    if (e != pimpl_->buckets.end()) {
-        return e->second;
-    } else {
-        pimpl_->buckets.insert(std::make_pair(k, ::riak::bucket(*this, k)));
-        return pimpl_->buckets.find(k)->second;
-    }
+    assert(this);
+    return bucket::bucket(*this, k, access_defaults_);
 }
 
 //=============================================================================

@@ -4,11 +4,15 @@
  *
  * \author Andres Jaan Tack <andres.jaan.tack@eesti.ee>
  */
-#include <boost/thread/future.hpp>
+#include <boost/asio/ip/tcp.hpp>
 #include <bucket.hxx>
+#include <functional>
 #include <memory>
 #include <object_access_parameters.hxx>
-#include <stdexcept>
+
+namespace boost {
+    namespace asio { class io_service; }
+}
 
 //=============================================================================
 namespace riak {
@@ -20,8 +24,13 @@ namespace riak {
  * You may, for instance, block on a write to this hash table, and thus be sure the value was delivered:
  *
  *    store s;
- *    auto result = s["breakfast"].set("ham and eggs");
- *    result.wait();
+ *    auto result = s["breakfast"].set("ham and eggs", [error]{
+ *        if (not error)
+ *            cerr << "success!";      // Handle events asynchronously by "default"
+ *        else
+ *            cerr << "failure. :(";
+ *    });
+ *    result.wait();   // We can be synchronous if we want.
  *    if (result.has_value())
  *        assert(*s["breakfast"] == "ham and eggs")
  *    else
@@ -36,8 +45,14 @@ class store
     /*! A sane set of defaults that should work fine for buckets with N=3. */
     static const object_access_parameters access_defaults;
   
-    /*! \post the table is empty. */
-    store (const object_access_parameters& = access_defaults);
+    /*!
+     * \param node_address should provide the location of a Riak node at which requests may be made.
+     *     Will be resolved via DNS.
+     * \param ios will be burdened with query transmission and reception events.
+     * \post A connection to node_address is made eagerly at the given location. The store is ready for
+     *     access.
+     */
+    store (const std::string& node_address, boost::asio::io_service& ios, const object_access_parameters& = access_defaults);
     ~store ();
     
     /*! Yields the object access defaults with which this store was instantiated. */
@@ -55,9 +70,15 @@ class store
     const ::riak::bucket operator[] (const key& k) const { return const_cast<store*>(this)->bucket(k); }
     
   private:
-    class implementation;
-    std::unique_ptr<implementation> pimpl_;
     const object_access_parameters access_defaults_;
+    const std::string& node_address_;
+    boost::asio::ip::tcp::socket socket_;
+    
+  protected:
+    friend class bucket;
+    friend class object;
+    typedef std::function<void(const boost::system::error_code&, const std::string&)> response_handler;
+    void transmit_request(const std::string& r, response_handler& h);
 };
 
 //=============================================================================
