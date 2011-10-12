@@ -5,6 +5,8 @@
  * \author Andres Jaan Tack <andres.jaan.tack@eesti.ee>
  */
 #include <boost/asio/ip/tcp.hpp>
+#include <boost/asio/streambuf.hpp>
+#include <boost/enable_shared_from_this.hpp>
 #include <bucket.hxx>
 #include <functional>
 #include <memory>
@@ -40,6 +42,7 @@ namespace riak {
  * the implementation, but it will not invalidate future accesses of any keys in s.
  */
 class store
+      : public boost::enable_shared_from_this<store>
 {
   public:    
     /*! A sane set of defaults that should work fine for buckets with N=3. */
@@ -77,8 +80,11 @@ class store
   protected:
     friend class bucket;
     friend class object;
-    typedef std::function<void(const boost::system::error_code&, const std::string&)> response_handler;
-    void transmit_request(const std::string& r, response_handler& h);
+    typedef std::function<void(const boost::system::error_code&, size_t, std::shared_ptr<boost::asio::streambuf>)> response_handler;
+    void transmit_request(const std::string& request, std::shared_ptr<boost::asio::streambuf> response_buffer, response_handler& h);
+    
+  private:
+    void handle_write (std::shared_ptr<boost::asio::streambuf>, response_handler, const boost::system::error_code&, size_t);
 };
 
 //=============================================================================
