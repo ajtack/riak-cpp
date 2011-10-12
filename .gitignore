@@ -1,4 +1,4 @@
 *.o
 *.sconsign.dblite
 build
-libstorage.a
+libriak.a
