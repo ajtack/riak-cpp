@@ -27,5 +27,3 @@ sources = Glob('build/library/*.cxx', 'build/library/*.proto')
 env.Command('build/library/riakclient.pb.h', 'build/library/riakclient.proto', "protoc $SOURCE --cpp_out=.; sleep 1")
 library = env.StaticLibrary('riak', [sources], build_dir='build/library')
 
-tests = SConscript('tests/SConscript', variant_dir='build/test', exports=['env', 'library'])
-AddPostAction(tests, tests[0].path + ' tests/tests.cfg')
