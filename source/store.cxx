@@ -8,6 +8,7 @@
 #include <boost/asio/buffers_iterator.hpp>
 #include <boost/asio/connect.hpp>
 #include <boost/asio/io_service.hpp>
+#include <boost/lexical_cast.hpp>
 #include <boost/asio/read_until.hpp>
 #include <boost/asio/write.hpp>
 #include <store.hxx>
@@ -27,14 +28,14 @@ const object_access_parameters store::access_defaults = object_access_parameters
     .with_notfound_ok();
 
 
-store::store (const std::string& node_address, boost::asio::io_service& ios, const object_access_parameters& d)
+store::store (const std::string& node_address, uint16_t port, boost::asio::io_service& ios, const object_access_parameters& d)
   : access_defaults_(d),
     node_address_(node_address),
     socket_(ios)
 {
     using boost::asio::ip::tcp;
     tcp::resolver resolver(ios);
-    tcp::resolver::query query(node_address, "node");
+    tcp::resolver::query query(node_address, boost::lexical_cast<std::string>(port));
     tcp::resolver::iterator endpoint_iterator = resolver.resolve(query);
     boost::asio::connect(socket_, endpoint_iterator);
 }
@@ -65,6 +66,7 @@ std::pair<iterator, bool> response_complete (const iterator begin, const iterato
     if (end - begin >= sizeof(uint32_t) + sizeof(char)) {
         uint32_t encoded_length = *reinterpret_cast<const uint32_t*>(&*begin);
         uint32_t data_length = ntohl(encoded_length);
+        
         if (end - (begin + sizeof(encoded_length)) >= data_length) {
             iterator new_beginning = begin + sizeof(encoded_length) + data_length;   // day breaks!
             return std::make_pair(new_beginning, true);

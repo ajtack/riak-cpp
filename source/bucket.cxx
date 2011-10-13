@@ -45,9 +45,13 @@ std::string packaged_delete_request (RpbDelReq& r)
     r.SerializeToString(&encoded_body);
     
     char message_code = 13;
-    uint32_t message_length = sizeof(message_code) + encoded_body.size();
+    uint32_t message_length = htonl(sizeof(message_code) + encoded_body.size());
     
-    return boost::lexical_cast<string>(htonl(message_length)) + message_code + encoded_body;
+    std::string full_message;
+    full_message.append(reinterpret_cast<char*>(&message_length), sizeof(message_length));
+    full_message += message_code;
+    full_message += encoded_body;
+    return full_message;
 }
 
 //=============================================================================

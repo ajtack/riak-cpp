@@ -6,7 +6,6 @@
  */
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/streambuf.hpp>
-#include <boost/enable_shared_from_this.hpp>
 #include <bucket.hxx>
 #include <functional>
 #include <memory>
@@ -42,7 +41,7 @@ namespace riak {
  * the implementation, but it will not invalidate future accesses of any keys in s.
  */
 class store
-      : public boost::enable_shared_from_this<store>
+      : public std::enable_shared_from_this<store>
 {
   public:    
     /*! A sane set of defaults that should work fine for buckets with N=3. */
@@ -55,7 +54,7 @@ class store
      * \post A connection to node_address is made eagerly at the given location. The store is ready for
      *     access.
      */
-    store (const std::string& node_address, boost::asio::io_service& ios, const object_access_parameters& = access_defaults);
+    store (const std::string& node_address, uint16_t port, boost::asio::io_service& ios, const object_access_parameters& = access_defaults);
     ~store ();
     
     /*! Yields the object access defaults with which this store was instantiated. */
