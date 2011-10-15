@@ -7,6 +7,7 @@
 #include <boost/asio/streambuf.hpp>
 #include <boost/lexical_cast.hpp>
 #include <bucket.hxx>
+#include <message.hxx>
 #include <riakclient.pb.h>
 #include <store.hxx>
 #include <string>
@@ -37,23 +38,6 @@ void delete_handler_for_promise (
     }
 }
 
-
-std::string packaged_delete_request (RpbDelReq& r)
-{
-    using std::string;
-    string encoded_body;
-    r.SerializeToString(&encoded_body);
-    
-    char message_code = 13;
-    uint32_t message_length = htonl(sizeof(message_code) + encoded_body.size());
-    
-    std::string full_message;
-    full_message.append(reinterpret_cast<char*>(&message_length), sizeof(message_length));
-    full_message += message_code;
-    full_message += encoded_body;
-    return full_message;
-}
-
 //=============================================================================
     }   // namespace (anonymous)
 //=============================================================================
@@ -69,6 +53,7 @@ boost::unique_future<void> bucket::unmap (const ::riak::key& k)
     request.set_dw(default_access_parameters_.dw);
     request.set_pr(default_access_parameters_.pr);
     request.set_pw(default_access_parameters_.pw);
+    auto query = message::encode(request);
     
     std::shared_ptr<boost::promise<void>> promise(new boost::promise<void>());
     
@@ -77,7 +62,7 @@ boost::unique_future<void> bucket::unmap (const ::riak::key& k)
     using std::placeholders::_3;
     std::shared_ptr<boost::asio::streambuf> buffer(new boost::asio::streambuf);
     store::response_handler callback = std::bind(&delete_handler_for_promise, promise, _1, _2, _3);
-    store_.transmit_request(packaged_delete_request(request), buffer, callback);
+    store_.transmit_request(query.to_string(), buffer, callback);
     
     return promise->get_future();
 }
