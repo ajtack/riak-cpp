@@ -3,6 +3,7 @@
 #include <boost/asio/streambuf.hpp>
 #include <boost/date_time/posix_time/posix_time_types.hpp>
 #include <boost/thread/mutex.hpp>
+#include <chrono>
 #include <memory>
 
 namespace boost {
@@ -25,7 +26,7 @@ class request_with_timeout
      */
     request_with_timeout (
             const std::string& data,
-            size_t timeout,
+            std::chrono::milliseconds timeout,
             boost::asio::ip::tcp::socket& s,
             response_handler& h,
             boost::asio::io_service& ios);
@@ -44,7 +45,7 @@ class request_with_timeout
       
     mutable boost::mutex mutex_;
     boost::asio::ip::tcp::socket& socket_;
-    boost::posix_time::time_duration timeout_length_;
+    std::chrono::milliseconds timeout_length_;
     boost::asio::deadline_timer timeout_;
     response_handler response_callback_;
     const std::string request_data_;

@@ -24,7 +24,7 @@ const object_access_parameters store::access_defaults = object_access_parameters
 
 
 const request_failure_parameters store::failure_defaults = request_failure_parameters()
-    .with_response_timeout(3000)
+    .with_response_timeout(std::chrono::milliseconds(3000))
     .with_retries_permitted(1);
 
 
@@ -55,11 +55,11 @@ store::~store ()
 bucket store::bucket (const key& k)
 {
     assert(this);
-    return bucket::bucket(*this, k, access_defaults_);
+    return bucket::bucket(*this, k, request_failure_defaults_, access_defaults_);
 }
 
 
-void store::transmit_request(const std::string& body, response_handler& h, size_t timeout)
+void store::transmit_request(const std::string& body, response_handler& h, std::chrono::milliseconds timeout)
 {
     std::shared_ptr<request_with_timeout> request(new request_with_timeout(body, timeout, socket_, h, ios_));
     request->dispatch();

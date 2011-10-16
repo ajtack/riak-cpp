@@ -16,12 +16,12 @@ using std::placeholders::_2;
 
 request_with_timeout::request_with_timeout (
         const std::string& data,
-        size_t timeout,
+        std::chrono::milliseconds timeout,
         boost::asio::ip::tcp::socket& s,
         response_handler& h,
         boost::asio::io_service& ios)
   : socket_(s),
-    timeout_length_(boost::posix_time::milliseconds(timeout)),
+    timeout_length_(timeout),
     timeout_(ios),
     request_data_(data),
     response_callback_(h),
@@ -34,7 +34,7 @@ void request_with_timeout::dispatch ()
 { 
     auto on_write = std::bind(&request_with_timeout::on_write, shared_from_this(), _1, _2);
     auto on_timeout = std::bind(&request_with_timeout::on_timeout, shared_from_this(), _1);
-    timeout_.expires_from_now(timeout_length_);
+    timeout_.expires_from_now(boost::posix_time::milliseconds(timeout_length_.count()));
     asio::async_write(socket_, asio::buffer(request_data_), on_write);
     timeout_.async_wait(on_timeout);
 }

@@ -9,6 +9,8 @@
 #include <boost/thread/future.hpp>
 #include <core_types.hxx>
 #include <object.hxx>
+#include <object_access_parameters.hxx>
+#include <request_failure_parameters.hxx>
 
 //=============================================================================
 namespace riak {
@@ -59,16 +61,18 @@ class bucket
      * \param k is the key which indexed this particular bucket in the store.
      * \param p will be used for unmapping operations by default.
      */
-    bucket (store& s, const ::riak::key& k, const object_access_parameters& p)
+    bucket (store& s, const ::riak::key& k, const request_failure_parameters& fp, const object_access_parameters& p)
       : store_(s),
         key_(k),
+        default_request_failure_parameters_(fp),
         default_access_parameters_(p)
     {   }
     
   private:
     store& store_;
     const ::riak::key key_;
-    const object_access_parameters& default_access_parameters_;
+    request_failure_parameters default_request_failure_parameters_;
+    object_access_parameters default_access_parameters_;
 };
 
 //=============================================================================

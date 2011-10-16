@@ -89,7 +89,7 @@ class store
     friend class bucket;
     friend class object;
     typedef request_with_timeout::response_handler response_handler;
-    void transmit_request(const std::string& request, response_handler& h, size_t timeout);
+    void transmit_request(const std::string& request, response_handler& h, std::chrono::milliseconds timeout);
 };
 
 //=============================================================================
