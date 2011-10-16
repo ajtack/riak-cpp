@@ -1,12 +1,3 @@
-/*!
- * \file
- * Defines the interface by which a client of the library can apply per-request (or global)
- * parameters that would constitute configuration. For instance, the number of read replicas
- * required for a successful read is required on a protocol level for most commands, but it
- * is not central to the desired behavior.
- *
- * \author Andres Jaan Tack <ajtack@gmail.com>
- */
 #pragma once
 #include <cstdint>
 
@@ -14,6 +5,15 @@
 namespace riak {
 //=============================================================================
 
+/*!
+ * Defines the interface by which a client of the library can apply per-request (or global)
+ * parameters that reflect behavior of the Riak store during a request, including how it stores,
+ * replicates and retrieves objects from replicas. For instance, the number of read replicas
+ * required for a successful read is required on a protocol level for most commands, but it
+ * is not central to the desired behavior.
+ *
+ * \author Andres Jaan Tack <ajtack@gmail.com>
+ */
 struct object_access_parameters
 {
     // All of the below are named canonically, such that they agree with Basho's
