@@ -4,12 +4,12 @@
  *
  * \author Andres Jaan Tack <andres.jaan.tack@eesti.ee>
  */
-#include <boost/asio/ip/tcp.hpp>
-#include <boost/asio/streambuf.hpp>
 #include <bucket.hxx>
 #include <functional>
 #include <memory>
 #include <object_access_parameters.hxx>
+#include <request_failure_parameters.hxx>
+#include <request_with_timeout.hxx>
 
 namespace boost {
     namespace asio { class io_service; }
@@ -46,6 +46,9 @@ class store
   public:    
     /*! A sane set of defaults that should work fine for buckets with N=3. */
     static const object_access_parameters access_defaults;
+    
+    /*! A sane set of failure defaults; someone who doesn't care to tune their application won't touch these. */
+    static const request_failure_parameters failure_defaults;
   
     /*!
      * \param node_address should provide the location of a Riak node at which requests may be made.
@@ -54,7 +57,11 @@ class store
      * \post A connection to node_address is made eagerly at the given location. The store is ready for
      *     access.
      */
-    store (const std::string& node_address, uint16_t port, boost::asio::io_service& ios, const object_access_parameters& = access_defaults);
+    store ( const std::string& node_address,
+            uint16_t port,
+            boost::asio::io_service& ios,
+            const request_failure_parameters& = failure_defaults,
+            const object_access_parameters& = access_defaults);
     ~store ();
     
     /*! Yields the object access defaults with which this store was instantiated. */
@@ -73,17 +80,16 @@ class store
     
   private:
     const object_access_parameters access_defaults_;
+    const request_failure_parameters request_failure_defaults_;
     const std::string& node_address_;
     boost::asio::ip::tcp::socket socket_;
+    boost::asio::io_service& ios_;
     
   protected:
     friend class bucket;
     friend class object;
-    typedef std::function<void(const boost::system::error_code&, size_t, std::shared_ptr<boost::asio::streambuf>)> response_handler;
-    void transmit_request(const std::string& request, std::shared_ptr<boost::asio::streambuf> response_buffer, response_handler& h);
-    
-  private:
-    void handle_write (std::shared_ptr<boost::asio::streambuf>, response_handler, const boost::system::error_code&, size_t);
+    typedef request_with_timeout::response_handler response_handler;
+    void transmit_request(const std::string& request, response_handler& h, size_t timeout);
 };
 
 //=============================================================================

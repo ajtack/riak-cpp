@@ -28,13 +28,12 @@ object bucket::operator[] (const ::riak::key& k)
 void delete_handler_for_promise (
         std::shared_ptr<boost::promise<void>>& p,
         const boost::system::error_code& error,
-        size_t bytes_received,
-        std::shared_ptr<boost::asio::streambuf> data)
+        const boost::asio::streambuf& data)
 {
     if (not error) {
         p->set_value();
     } else {
-        p->set_exception(boost::copy_exception(std::runtime_error("Darn Error")));
+        p->set_exception(boost::copy_exception(boost::system::system_error(error)));
     }
 }
 
@@ -60,9 +59,8 @@ boost::unique_future<void> bucket::unmap (const ::riak::key& k)
     using std::placeholders::_1;
     using std::placeholders::_2;
     using std::placeholders::_3;
-    std::shared_ptr<boost::asio::streambuf> buffer(new boost::asio::streambuf);
-    store::response_handler callback = std::bind(&delete_handler_for_promise, promise, _1, _2, _3);
-    store_.transmit_request(query.to_string(), buffer, callback);
+    store::response_handler callback = std::bind(&delete_handler_for_promise, promise, _1, _2);
+    store_.transmit_request(query.to_string(), callback, 3000);
     
     return promise->get_future();
 }
