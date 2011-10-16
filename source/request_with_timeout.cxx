@@ -40,17 +40,17 @@ void request_with_timeout::dispatch ()
 }
 
 
-void request_with_timeout::on_response (const system::error_code& error, size_t)
+void request_with_timeout::on_response (const system::error_code& error, size_t bytes_received)
 {
     assert(not succeeded_);
     unique_lock<mutex> serialize(this->mutex_);
     succeeded_ = not (timed_out_ or error);
     if (succeeded_) {
         timeout_.cancel();
-        response_callback_(system::error_code(), response_data_);
+        response_callback_(system::error_code(), bytes_received, response_data_);
     } else if (error != asio::error::operation_aborted) {
         timeout_.cancel();
-        response_callback_(error, response_data_);
+        response_callback_(error, 0, response_data_);
     }
 }
 
@@ -63,7 +63,7 @@ void request_with_timeout::on_timeout (const system::error_code& error)
     if (timed_out_) {
         using namespace system;
         auto timeout_error = error_code(errc::timed_out, get_generic_category());
-        response_callback_(timeout_error, response_data_);
+        response_callback_(timeout_error, 0, response_data_);
 
         // We want to be sure we don't receive any stale replies the next time we use this.
         auto last_target = socket_.remote_endpoint();
@@ -113,7 +113,7 @@ void request_with_timeout::on_write (const system::error_code& error, size_t)
         asio::async_read_until(socket_, response_data_, &response_complete, response_handler);
     } else if (error != asio::error::operation_aborted) {
         timeout_.cancel();
-        response_callback_(error, response_data_);
+        response_callback_(error, 0, response_data_);
     }
 }
 

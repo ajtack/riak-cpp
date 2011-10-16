@@ -6,11 +6,16 @@
  * \author Andres Jaan Tack <ajtack@gmail.com>
  */
 #pragma once
+#include <boost/asio/streambuf.hpp>
 #include <boost/optional.hpp>
 #include <boost/thread/future.hpp>
+#include <chrono>
 #include <core_types.hxx>
+#include <memory>
 #include <object_access_parameters.hxx>
-#include <unordered_map>
+#include <riakclient.pb.h>
+#include <request_failure_parameters.hxx>
+#include <string>
 #include <vector>
 
 //=============================================================================
@@ -18,91 +23,79 @@ namespace riak {
 //=============================================================================
 
 class store;
-class bucket;
 
 class object
+      : public std::enable_shared_from_this<object>
 { 
   public:
-    /*! Every object body must be convertible to and from a string. */
-    struct content
-    {
-        content (const std::string& v)
-          : value(v)
-        {   }
-        
-        struct link {
-            boost::optional<std::string> bucket;
-            boost::optional<std::string> key;
-            boost::optional<std::string> tag;
-        };
-        
-        struct timestamp {
-            uint32_t seconds;
-            uint32_t microseconds;
-        };
-        
-        std::string value;
-        
-        boost::optional<std::string> content_type;
-        boost::optional<std::string> charset;
-        boost::optional<std::string> content_encoding;
-        boost::optional<std::string> vtag;
-        std::vector<link> links;
-        boost::optional<timestamp> last_mod;
-        std::vector<std::pair<std::string, std::string>> usermeta;  /*!< Key/Value metadata pairs; null value is allowed. */
-    };
-          
+    typedef std::shared_ptr<object> reference;
+    typedef ::RpbContent value;
+    const ::riak::key& key () const { return key_; }
+    
     /*!
-     * \return The time (in milliseconds) required to complete the store.
+     * If this object is cold (never been fetched), performs a fetch and then a store using the vector
+     * clock therefrom retrieved. If this object has ever been fetched, that vector clock will be used
+     * for the subsequent put.
+     * 
+     * Be aware that a vector clock is maintained among copies of an object instance, but new instances
+     * (gotten from bucket::operator[]) will be cold.
+     *
+     * \return A future that will "have a value" (that value being still void) when the put query
+     *     receives a response.
      */
-    boost::shared_future<size_t> put (
-            const content& b,
-            const boost::optional<std::string>& vector_clock = boost::none );
+    boost::shared_future<void> put (const value& b);
             // const object_access_parameters& p = store_.object_access_defaults() );
             
+    typedef value sibling;
+    typedef ::google::protobuf::RepeatedPtrField<sibling> siblings;
+    
     /*!
-     * \return The time (in milliseconds) required to complete the store together with the body
-     *     found on the store.
+     * If this object is cold (never been fetched), performs a fetch and then a store using the vector
+     * clock therefrom retrieved. If this object has ever been fetched, that vector clock will be used
+     * for the subsequent put.
+     * 
+     * Be aware that a vector clock is maintained among copies of an object instance, but new instances
+     * (gotten from bucket::operator[]) will be cold.
+     * 
+     * \return The body found on the store, as per future semantics.
      */
-    boost::shared_future<std::tuple<size_t, content>> put_returning_body (
-            const content& b,
-            const boost::optional<std::string>& vector_clock = boost::none );
+    boost::shared_future<siblings> put_returning_body (const value& b);
             // const object_access_parameters& p = store_.object_access_defaults() );
-        
-    typedef content sibling;
-    struct fetched_value {
-        boost::optional<std::list<sibling>> siblings;
-        boost::optional<std::string> vclock;  /*!< The clock which must be given by subsequent puts
-                                                   to resolve siblings. */
-        boost::optional<bool> unchanged;      /*!< Whether writes beyond the given vector clock were detected. */
-    };
     
     /*!
      * Begins an asynchronous read of this value from the store. The retrieved value will not be
      * cached; the only memory of it will be given with the returned future.
      */
-    boost::shared_future<boost::optional<fetched_value>>
-    fetch ( const boost::optional<std::string>& vector_clock = boost::optional<std::string>() ) const;
+    boost::shared_future<boost::optional<siblings>> fetch () const;
             // const object_access_parameters& p = store_.object_access_defaults() ) const;
     
   protected:
     friend class bucket;
-    object (store& s, bucket& b, const key& k)
+    object (store& s, const ::riak::key& bucket, const ::riak::key& k, const request_failure_parameters& fp, const object_access_parameters& p)
       : store_(s),
-        bucket_(b),
-        key_(k)
+        bucket_(bucket),
+        key_(k),
+        default_request_failure_parameters_(fp),
+        default_access_parameters_(p)
     {   }
     
   private:
     store& store_;
-    bucket& bucket_;
-    const key& key_;
+    const ::riak::key& bucket_;
+    const ::riak::key& key_;
     
-    typedef std::unordered_map<key, object::content> object_table;
-    typedef std::unordered_map<key, object_table> bucket_table;
-    static bucket_table buckets;
-    static boost::mutex mutex;
-    object_table& get_bucket (store& s, const key& k) const;
+    request_failure_parameters default_request_failure_parameters_;
+    object_access_parameters default_access_parameters_;
+    
+    mutable boost::mutex mutex_;
+    mutable boost::optional<siblings> cached_siblings_;
+    mutable boost::optional<std::string> cached_vector_clock_;
+    
+    void on_fetch_response (
+            std::shared_ptr<boost::promise<boost::optional<object::siblings>>>&,
+            const boost::system::error_code&,
+            std::size_t,
+            boost::asio::streambuf&) const;
 };
 
 //=============================================================================

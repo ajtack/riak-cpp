@@ -4,77 +4,75 @@
  *
  * \author Andres Jaan Tack <ajtack@gmail.com>
  */
-#include <bucket.hxx>
-#include <object.hxx>
+#include <boost/asio/streambuf.hpp>
+#include <boost/system/system_error.hpp>
 #include <boost/thread/mutex.hpp>
+#include <bucket.hxx>
+#include <message.hxx>
+#include <object.hxx>
+#include <riakclient.pb.h>
+#include <store.hxx>
 
 //=============================================================================
 namespace riak {
 //=============================================================================
 
-object::bucket_table object::buckets;
-boost::mutex object::mutex;
-
-boost::shared_future<size_t> object::put (
-        const content& b,
-        const boost::optional<std::string>& )
-        // const object_access_parameters& )
-{
-    boost::promise<size_t> promise;
-    object_table& objects = get_bucket(store_, bucket_.key());
-    objects.insert(std::make_pair(key_, b));
-    promise.set_value(0);
-    return promise.get_future();   // Determine our own destiny!
-}
-
-        
-boost::shared_future<std::tuple<size_t, object::content>> object::put_returning_body (
-        const content& b,
-        const boost::optional<std::string>& vector_clock )
-        // const object_access_parameters& p )
-{
-    boost::promise<std::tuple<size_t, content>> result;
-    boost::shared_future<size_t> insertion_time = put(b, vector_clock);
-    assert(insertion_time.is_ready() and insertion_time.has_value());
-    result.set_value(std::make_tuple(insertion_time.get(), buckets.find(bucket_.key())->second.find(key_)->second));
-    return result.get_future();
-}
+using std::placeholders::_1;
+using std::placeholders::_2;
+using std::placeholders::_3;
 
 
-boost::shared_future<boost::optional<object::fetched_value>> object::fetch (
-        const boost::optional<std::string>& vector_clock ) const
+boost::shared_future<boost::optional<object::siblings>> object::fetch () const
         // const object_access_parameters& p = store_.object_access_defaults() ) const
 {
-    using namespace boost;
-    using namespace std;
+    RpbGetReq request;
+    request.set_bucket(this->bucket_);
+    request.set_key(this->key());
+    request.set_r (default_access_parameters_.r);
+    request.set_pr(default_access_parameters_.pr);
+    request.set_basic_quorum(default_access_parameters_.basic_quorum);
+    request.set_notfound_ok(default_access_parameters_.notfound_ok);
+    if (cached_vector_clock_) request.set_if_modified(*cached_vector_clock_);
+    request.set_head(false);
+    request.set_deletedvclock(true);
+    auto query = message::encode(request);
     
-    promise<optional<fetched_value>> promise;
-    object_table& objects = get_bucket(store_, bucket_.key());
-    object_table::iterator object_location = objects.find(key_);
-    if (object_location != objects.end()) {
-        fetched_value f;
-        f.siblings = list<sibling>();
-        f.siblings->push_back(object_location->second);
-        f.vclock = "";  // TODO
-        f.unchanged = 0;
-        promise.set_value(f);
-        return promise.get_future();
-    } else {
-        promise.set_value(boost::none);
-        return promise.get_future();
-    }
+    typedef boost::optional<object::siblings> optval;
+    std::shared_ptr<boost::promise<optval>> promise(new boost::promise<optval>());
+    store::response_handler callback = std::bind(&object::on_fetch_response, shared_from_this(), promise, _1, _2, _3);
+    store_.transmit_request(query.to_string(), callback, default_request_failure_parameters_.response_timeout);
+    return promise->get_future();
 }
 
 
-object::object_table& object::get_bucket (store& s, const key& k) const
+void object::on_fetch_response (
+        std::shared_ptr<boost::promise<boost::optional<object::siblings>>>& p,
+        const boost::system::error_code& error,
+        std::size_t bytes_received,
+        boost::asio::streambuf& input) const
 {
-    boost::unique_lock<boost::mutex> protect(mutex);
-    bucket_table::iterator bucket_location = buckets.find(k);
-    if (bucket_location != buckets.end()) {
-        return bucket_location->second;
+    // Yaaaaay brackets!
+    if (not error) {
+        RpbGetResp response;
+        if (message::retrieve(response, bytes_received, input)) {
+            boost::unique_lock<boost::mutex> protect(mutex_);
+            if (not (response.has_unchanged() and response.unchanged())) {
+                if (response.has_vclock()) {
+                    cached_siblings_ = response.content();
+                    cached_vector_clock_ = response.vclock();
+                    p->set_value(cached_siblings_);
+                } else {
+                    p->set_value(boost::optional<object::siblings>());
+                }
+            } else {
+                p->set_value(cached_siblings_);
+            }
+        } else {
+            p->set_exception(boost::copy_exception(
+                    std::invalid_argument("Riak server's response was nonsensical.")));
+        }
     } else {
-        buckets.insert(make_pair(k, object_table()));
-        return buckets.find(k)->second;
+        p->set_exception(boost::copy_exception(boost::system::system_error(error)));
     }
 }
 

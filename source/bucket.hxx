@@ -34,8 +34,8 @@ class bucket
      * Generates a reference to an object (possibly as-yet nonexistent) mapped at the given key.
      * With this reference, you can access and make changes to the store itself.
      */
-          object operator[] (const key& k);
-    const object operator[] (const key& k) const { return const_cast<bucket&>(*this)[k]; }
+          object::reference operator[] (const key& k);
+    const object::reference operator[] (const key& k) const { return const_cast<bucket&>(*this)[k]; }
     
     typedef std::function<void(const boost::system::error_code&, bool)> deletion_result_handler;
     

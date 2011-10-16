@@ -18,7 +18,7 @@ class request_with_timeout
       : public std::enable_shared_from_this<request_with_timeout>
 {
   public:
-    typedef std::function<void(const boost::system::error_code&, const boost::asio::streambuf&)> response_handler;
+    typedef std::function<void(const boost::system::error_code&, std::size_t, boost::asio::streambuf&)> response_handler;
       
     /*!
      * Packages a task, but does not send it or begin any timeout counting.
