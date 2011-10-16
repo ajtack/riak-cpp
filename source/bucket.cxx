@@ -58,7 +58,6 @@ boost::unique_future<void> bucket::unmap (const ::riak::key& k)
     
     using std::placeholders::_1;
     using std::placeholders::_2;
-    using std::placeholders::_3;
     store::response_handler callback = std::bind(&delete_handler_for_promise, promise, _1, _2);
     store_.transmit_request(query.to_string(), callback, default_request_failure_parameters_.response_timeout);
     
