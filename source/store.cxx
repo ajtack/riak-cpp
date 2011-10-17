@@ -12,15 +12,9 @@
 namespace riak {
 //=============================================================================
 
-const object_access_parameters store::access_defaults = object_access_parameters()
-    .with_r(2)
-    .with_pr(2)
-    .with_w(2)
-    .with_pw(2)
-    .with_dw(0)
-    .with_rw(2)
-    .with_basic_quorum()
-    .with_notfound_ok();
+// The default does not specify anything out of the ordinary with the configuration of the
+// Riak servers themselves. The default is actually server-side.
+const object_access_parameters store::access_override_defaults = object_access_parameters();
 
 
 const request_failure_parameters store::failure_defaults = request_failure_parameters()
@@ -34,7 +28,7 @@ store::store (
         boost::asio::io_service& ios,
         const request_failure_parameters& fp,
         const object_access_parameters& d)
-  : access_defaults_(d),
+  : access_overrides_(d),
     request_failure_defaults_(fp),
     node_address_(node_address),
     socket_(ios),
@@ -55,7 +49,7 @@ store::~store ()
 bucket store::bucket (const key& k)
 {
     assert(this);
-    return bucket::bucket(*this, k, request_failure_defaults_, access_defaults_);
+    return bucket::bucket(*this, k, request_failure_defaults_, access_overrides_);
 }
 
 

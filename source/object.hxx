@@ -76,7 +76,7 @@ class object
         bucket_(bucket),
         key_(k),
         default_request_failure_parameters_(fp),
-        default_access_parameters_(p)
+        overridden_access_parameters_(p)
     {   }
     
   private:
@@ -85,7 +85,7 @@ class object
     const ::riak::key& key_;
     
     request_failure_parameters default_request_failure_parameters_;
-    object_access_parameters default_access_parameters_;
+    object_access_parameters overridden_access_parameters_;
     
     mutable boost::mutex mutex_;
     mutable boost::optional<siblings> cached_siblings_;

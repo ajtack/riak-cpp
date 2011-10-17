@@ -59,20 +59,21 @@ class bucket
     
     /*!
      * \param k is the key which indexed this particular bucket in the store.
-     * \param p will be used for unmapping operations by default.
+     * \param p will be used for unmapping operations by default. It will also be given as cconfiguration
+     *     overrides for any objects referenced through this bucket.
      */
     bucket (store& s, const ::riak::key& k, const request_failure_parameters& fp, const object_access_parameters& p)
       : store_(s),
         key_(k),
         default_request_failure_parameters_(fp),
-        default_access_parameters_(p)
+        overridden_access_parameters_(p)
     {   }
     
   private:
     store& store_;
     const ::riak::key key_;
     request_failure_parameters default_request_failure_parameters_;
-    object_access_parameters default_access_parameters_;
+    object_access_parameters overridden_access_parameters_;
 };
 
 //=============================================================================

@@ -24,7 +24,7 @@ using std::placeholders::_3;
 object::reference bucket::operator[] (const ::riak::key& k)
 {
     return object::reference(
-            new object(store_, this->key(), k, default_request_failure_parameters_, default_access_parameters_));
+            new object(store_, this->key(), k, default_request_failure_parameters_, overridden_access_parameters_));
 }
 
 //=============================================================================
@@ -57,12 +57,13 @@ boost::unique_future<void> bucket::unmap (const ::riak::key& k)
     RpbDelReq request;
     request.set_bucket(this->key());
     request.set_key(k);
-    request.set_r (default_access_parameters_.r);
-    request.set_rw(default_access_parameters_.rw);
-    request.set_w (default_access_parameters_.w);
-    request.set_dw(default_access_parameters_.dw);
-    request.set_pr(default_access_parameters_.pr);
-    request.set_pw(default_access_parameters_.pw);
+    auto& overridden = overridden_access_parameters_;
+    if (overridden.r )   request.set_r (*overridden.r );
+    if (overridden.rw)   request.set_rw(*overridden.rw);
+    if (overridden.w )   request.set_w (*overridden.w );
+    if (overridden.dw)   request.set_dw(*overridden.dw);
+    if (overridden.pr)   request.set_pr(*overridden.pr);
+    if (overridden.pw)   request.set_pw(*overridden.pw);
     auto query = message::encode(request);
     
     std::shared_ptr<boost::promise<void>> promise(new boost::promise<void>());

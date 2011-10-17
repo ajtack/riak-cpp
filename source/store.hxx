@@ -44,8 +44,8 @@ class store
       : public std::enable_shared_from_this<store>
 {
   public:    
-    /*! A sane set of defaults that should work fine for buckets with N=3. */
-    static const object_access_parameters access_defaults;
+    /*! Defaults that allow total control to the database administrators. */
+    static const object_access_parameters access_override_defaults;
     
     /*! A sane set of failure defaults; someone who doesn't care to tune their application won't touch these. */
     static const request_failure_parameters failure_defaults;
@@ -61,11 +61,11 @@ class store
             uint16_t port,
             boost::asio::io_service& ios,
             const request_failure_parameters& = failure_defaults,
-            const object_access_parameters& = access_defaults);
+            const object_access_parameters& = access_override_defaults);
     ~store ();
     
     /*! Yields the object access defaults with which this store was instantiated. */
-    const object_access_parameters& object_access_defaults () const;
+    const object_access_parameters& object_access_override_defaults () const;
     
     /*!
      * Returns the value mapped by the given key. May return a value evaluating to "false", in which case
@@ -79,7 +79,7 @@ class store
     const ::riak::bucket operator[] (const key& k) const { return const_cast<store*>(this)->bucket(k); }
     
   private:
-    const object_access_parameters access_defaults_;
+    const object_access_parameters access_overrides_;
     const request_failure_parameters request_failure_defaults_;
     const std::string& node_address_;
     boost::asio::ip::tcp::socket socket_;

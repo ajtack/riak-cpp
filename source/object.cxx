@@ -28,10 +28,11 @@ boost::shared_future<boost::optional<object::siblings>> object::fetch () const
     RpbGetReq request;
     request.set_bucket(this->bucket_);
     request.set_key(this->key());
-    request.set_r (default_access_parameters_.r);
-    request.set_pr(default_access_parameters_.pr);
-    request.set_basic_quorum(default_access_parameters_.basic_quorum);
-    request.set_notfound_ok(default_access_parameters_.notfound_ok);
+    auto& overridden = overridden_access_parameters_;
+    if (overridden.r )            request.set_r           (*overridden_access_parameters_.r);
+    if (overridden.pr)            request.set_pr          (*overridden_access_parameters_.pr);
+    if (overridden.basic_quorum)  request.set_basic_quorum(*overridden_access_parameters_.basic_quorum);
+    if (overridden.notfound_ok)   request.set_notfound_ok (*overridden_access_parameters_.notfound_ok);
     if (cached_vector_clock_) request.set_if_modified(*cached_vector_clock_);
     request.set_head(false);
     request.set_deletedvclock(true);
