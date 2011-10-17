@@ -24,8 +24,8 @@ else:
     env = common_env
     
 sources = Glob('build/library/*.cxx', 'build/library/*.proto')
-env.Command('build/library/riakclient.pb.h', 'build/library/riakclient.proto', "protoc $SOURCE --cpp_out=.; sleep 1")
-env.Command('build/library/riakclient.pb.cc', 'build/library/riakclient.proto', "protoc $SOURCE --cpp_out=.; sleep 1")
+env.Command('build/library/riakclient.pb.h', 'build/library/riakclient.proto', "protoc $SOURCE --cpp_out=.")
+env.Command('build/library/riakclient.pb.cc', 'build/library/riakclient.proto', "protoc $SOURCE --cpp_out=.")
 riak_protocol = env.Object('build/library/riakclient.pb.o', 'build/library/riakclient.pb.cc')
 library = env.StaticLibrary('riak', [sources, riak_protocol], build_dir='build/library')
 
