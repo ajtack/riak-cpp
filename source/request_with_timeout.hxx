@@ -1,7 +1,6 @@
 #include <boost/asio/deadline_timer.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/streambuf.hpp>
-#include <boost/date_time/posix_time/posix_time_types.hpp>
 #include <boost/thread/mutex.hpp>
 #include <chrono>
 #include <memory>
