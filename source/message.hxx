@@ -20,6 +20,8 @@ struct code
 {
     static const code GetRequest;
     static const code GetResponse;
+    static const code PutRequest;
+    static const code PutResponse;
     static const code DeleteRequest;
     static const code DeleteResponse;
     
@@ -72,6 +74,7 @@ template <typename PbMessageBody>
 wire_package encode (const PbMessageBody& b);
 
 template <> wire_package encode (const RpbGetReq&);
+template <> wire_package encode (const RpbPutReq&);
 template <> wire_package encode (const RpbDelReq&);
 
 /*!
@@ -83,6 +86,7 @@ template <typename PbMessageBody>
 bool retrieve (PbMessageBody& body, std::size_t bytes_received, boost::asio::streambuf& data);
 
 template <> bool retrieve (const RpbGetResp&, std::size_t, boost::asio::streambuf&);
+template <> bool retrieve (const RpbPutResp&, std::size_t, boost::asio::streambuf&);
 
 bool verify_code (code c, std::size_t, boost::asio::streambuf&);
     

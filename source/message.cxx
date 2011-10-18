@@ -63,6 +63,8 @@ bool retrieve_body_with_code (code expected_code, PbMessageBody& body, std::size
 
 const code code::GetRequest(9);
 const code code::GetResponse(10);
+const code code::PutRequest(11);
+const code code::PutResponse(12);
 const code code::DeleteRequest(13);
 const code code::DeleteResponse(14);
 
@@ -73,6 +75,7 @@ wire_package encode (const pbtype& b) {          \
 }
 
 ENCODE(RpbGetReq, GetRequest);
+ENCODE(RpbPutReq, PutRequest);
 ENCODE(RpbDelReq, DeleteRequest);
 
 #undef ENCODE
@@ -85,6 +88,7 @@ bool retrieve (pbtype& result, std::size_t n, boost::asio::streambuf& input) { \
 }
 
 DECODE(RpbGetResp, GetResponse);
+DECODE(RpbPutResp, PutResponse);
 
 #undef ENCODE
 
