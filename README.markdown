@@ -72,8 +72,9 @@ Implementation Status
 
 We reiterate: This library is a work in progress. As of this moment, the following operations are supported:
  
- * Get a key
+ * Get a value
  * Delete a key
+ * Store a value (NB! only after an explicit Fetch on the same object reference)
  
 In addition, the following are supported:
 
