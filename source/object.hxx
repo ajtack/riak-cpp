@@ -81,8 +81,8 @@ class object
     
   private:
     store& store_;
-    const ::riak::key& bucket_;
-    const ::riak::key& key_;
+    const ::riak::key bucket_;
+    const ::riak::key key_;
     
     request_failure_parameters default_request_failure_parameters_;
     object_access_parameters overridden_access_parameters_;
