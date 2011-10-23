@@ -8,7 +8,7 @@
 #pragma once
 #include <boost/asio/streambuf.hpp>
 #include <cstddef>
-#include <riakclient.pb.h>
+#include <riak/riakclient.pb.h>
 
 //=============================================================================
 namespace riak {

@@ -1,10 +1,11 @@
 import os
 
-VariantDir('build/library', 'source')
+library_build_path = '#build/riak/'
+VariantDir(library_build_path, 'riak')
 common_env = Environment(
         ENV = os.environ,
         CXXFLAGS = ['--std=c++0x'],
-        CPPPATH = ['/opt/local/include', '#source', '#build/library'],
+        CPPPATH = ['/opt/local/include', '#', '#build/'],
         LIBPATH = ['/opt/local/lib'])
 
 if ARGUMENTS.get('VERBOSE') != 'yes':
@@ -23,9 +24,9 @@ if ARGUMENTS.get('DEBUG') == 'yes':
 else:
     env = common_env
     
-sources = Glob('build/library/*.cxx', 'build/library/*.proto')
-env.Command('build/library/riakclient.pb.h', 'build/library/riakclient.proto', "protoc $SOURCE --cpp_out=.")
-env.Command('build/library/riakclient.pb.cc', 'build/library/riakclient.proto', "protoc $SOURCE --cpp_out=.")
-riak_protocol = env.Object('build/library/riakclient.pb.o', 'build/library/riakclient.pb.cc')
-library = env.StaticLibrary('riak', [sources, riak_protocol], build_dir='build/library')
+sources = Glob(library_build_path + '*.cxx', library_build_path + '*.proto')
+env.Command(library_build_path + 'riakclient.pb.h', library_build_path + 'riakclient.proto', "protoc $SOURCE --cpp_out=.")
+env.Command(library_build_path + 'riakclient.pb.cc', library_build_path + 'riakclient.proto', "protoc $SOURCE --cpp_out=.")
+riak_protocol = env.Object(library_build_path + 'riakclient.pb.o', library_build_path + 'riakclient.pb.cc')
+library = env.StaticLibrary('riak', [sources, riak_protocol], build_dir=library_build_path)
 

@@ -10,11 +10,11 @@
 #include <boost/optional.hpp>
 #include <boost/thread/future.hpp>
 #include <chrono>
-#include <core_types.hxx>
 #include <memory>
-#include <object_access_parameters.hxx>
-#include <riakclient.pb.h>
-#include <request_failure_parameters.hxx>
+#include <riak/core_types.hxx>
+#include <riak/object_access_parameters.hxx>
+#include <riak/riakclient.pb.h>
+#include <riak/request_failure_parameters.hxx>
 #include <string>
 #include <vector>
 

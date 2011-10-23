@@ -6,7 +6,7 @@
  */
 #include <boost/asio/connect.hpp>
 #include <boost/lexical_cast.hpp>
-#include <store.hxx>
+#include <riak/store.hxx>
 
 //=============================================================================
 namespace riak {

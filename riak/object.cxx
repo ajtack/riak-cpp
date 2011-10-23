@@ -7,11 +7,11 @@
 #include <boost/asio/streambuf.hpp>
 #include <boost/system/system_error.hpp>
 #include <boost/thread/mutex.hpp>
-#include <bucket.hxx>
-#include <message.hxx>
-#include <object.hxx>
-#include <riakclient.pb.h>
-#include <store.hxx>
+#include <riak/bucket.hxx>
+#include <riak/message.hxx>
+#include <riak/object.hxx>
+#include <riak/riakclient.pb.h>
+#include <riak/store.hxx>
 
 //=============================================================================
 namespace riak {

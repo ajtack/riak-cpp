@@ -1,7 +1,7 @@
 #include <boost/asio/buffers_iterator.hpp>
 #include <boost/asio/read_until.hpp>
 #include <boost/asio/write.hpp>
-#include <request_with_timeout.hxx>
+#include <riak/request_with_timeout.hxx>
 
 //=============================================================================
 namespace riak {

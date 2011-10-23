@@ -6,10 +6,10 @@
  */
 #include <boost/asio/streambuf.hpp>
 #include <boost/lexical_cast.hpp>
-#include <bucket.hxx>
-#include <message.hxx>
-#include <riakclient.pb.h>
-#include <store.hxx>
+#include <riak/bucket.hxx>
+#include <riak/message.hxx>
+#include <riak/riakclient.pb.h>
+#include <riak/store.hxx>
 #include <string>
 
 //=============================================================================

@@ -4,12 +4,12 @@
  *
  * \author Andres Jaan Tack <andres.jaan.tack@eesti.ee>
  */
-#include <bucket.hxx>
+#include <riak/bucket.hxx>
 #include <functional>
 #include <memory>
-#include <object_access_parameters.hxx>
-#include <request_failure_parameters.hxx>
-#include <request_with_timeout.hxx>
+#include <riak/object_access_parameters.hxx>
+#include <riak/request_failure_parameters.hxx>
+#include <riak/request_with_timeout.hxx>
 
 namespace boost {
     namespace asio { class io_service; }

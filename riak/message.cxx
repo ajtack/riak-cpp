@@ -1,6 +1,6 @@
 #include <boost/asio/streambuf.hpp>
-#include <message.hxx>
 #include <iostream>
+#include <riak/message.hxx>
 
 //=============================================================================
 namespace riak {

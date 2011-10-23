@@ -7,10 +7,10 @@
 #pragma once
 #include <boost/system/error_code.hpp>
 #include <boost/thread/future.hpp>
-#include <core_types.hxx>
-#include <object.hxx>
-#include <object_access_parameters.hxx>
-#include <request_failure_parameters.hxx>
+#include <riak/core_types.hxx>
+#include <riak/object.hxx>
+#include <riak/object_access_parameters.hxx>
+#include <riak/request_failure_parameters.hxx>
 
 //=============================================================================
 namespace riak {
