@@ -6,9 +6,9 @@
  * \author Andres Jaan tack <ajtack@gmail.com>
  */
 #pragma once
-#include <boost/asio/streambuf.hpp>
 #include <cstddef>
 #include <riak/riakclient.pb.h>
+#include <string>
 
 //=============================================================================
 namespace riak {
@@ -83,12 +83,12 @@ template <> wire_package encode (const RpbDelReq&);
  * \return true iff decoding of the given protocol buffer was successful.
  */
 template <typename PbMessageBody>
-bool retrieve (PbMessageBody& body, std::size_t bytes_received, boost::asio::streambuf& data);
+bool retrieve (PbMessageBody& body, std::size_t bytes_received, const std::string& data);
 
-template <> bool retrieve (const RpbGetResp&, std::size_t, boost::asio::streambuf&);
-template <> bool retrieve (const RpbPutResp&, std::size_t, boost::asio::streambuf&);
+template <> bool retrieve (const RpbGetResp&, std::size_t, const std::string&);
+template <> bool retrieve (const RpbPutResp&, std::size_t, const std::string&);
 
-bool verify_code (code c, std::size_t, boost::asio::streambuf&);
+bool verify_code (const code& c, std::size_t, const std::string&);
     
 //=============================================================================
     }   // namespace message

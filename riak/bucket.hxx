@@ -5,7 +5,6 @@
  * \author Andres Jaan Tack <ajtack@gmail.com>
  */
 #pragma once
-#include <boost/system/error_code.hpp>
 #include <boost/thread/future.hpp>
 #include <riak/core_types.hxx>
 #include <riak/object.hxx>
@@ -37,7 +36,7 @@ class bucket
           object::reference operator[] (const key& k);
     const object::reference operator[] (const key& k) const { return const_cast<bucket&>(*this)[k]; }
     
-    typedef std::function<void(const boost::system::error_code&, bool)> deletion_result_handler;
+    typedef std::function<void(std::error_code, bool)> deletion_result_handler;
     
     /*! Deletes any value mapped at the given key asynchronously, with results given as per the returned future. */
     boost::unique_future<void> unmap (const key& k);

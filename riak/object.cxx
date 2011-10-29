@@ -4,8 +4,6 @@
  *
  * \author Andres Jaan Tack <ajtack@gmail.com>
  */
-#include <boost/asio/streambuf.hpp>
-#include <boost/system/system_error.hpp>
 #include <boost/thread/mutex.hpp>
 #include <riak/bucket.hxx>
 #include <riak/message.hxx>
@@ -66,9 +64,9 @@ boost::shared_future<boost::optional<object::siblings>> object::fetch () const
 
 void object::on_fetch_response (
         std::shared_ptr<boost::promise<boost::optional<object::siblings>>>& p,
-        const boost::system::error_code& error,
+        const std::error_code& error,
         std::size_t bytes_received,
-        boost::asio::streambuf& input) const
+        const std::string& input) const
 {
     // Yaaaaay brackets!
     if (not error) {
@@ -91,7 +89,7 @@ void object::on_fetch_response (
                     std::invalid_argument("Riak server's response was nonsensical.")));
         }
     } else {
-        p->set_exception(boost::copy_exception(boost::system::system_error(error)));
+        p->set_exception(boost::copy_exception(std::system_error(error)));
     }
 }
 
@@ -129,9 +127,9 @@ void object::put_with_cached_vector_clock (
 
 void object::on_put_response (
     std::shared_ptr<boost::promise<void>>& p,
-    const boost::system::error_code& error,
+    const std::error_code& error,
     std::size_t bytes_received,
-    boost::asio::streambuf& input) const
+    const std::string& input) const
 {
     if (not error) {
         RpbPutResp response;
@@ -146,7 +144,7 @@ void object::on_put_response (
                     std::invalid_argument("Riak server's response was nonsensical.")));
         }
     } else {
-        p->set_exception(boost::copy_exception(boost::system::system_error(error)));
+        p->set_exception(boost::copy_exception(std::system_error(error)));
     }
 }
 

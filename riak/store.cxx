@@ -4,9 +4,8 @@
  *
  * \author Andres Jaan Tack <andres.jaan.tack@eesti.ee>
  */
-#include <boost/asio/connect.hpp>
-#include <boost/lexical_cast.hpp>
 #include <riak/store.hxx>
+#include <riak/request_with_timeout.hxx>
 
 //=============================================================================
 namespace riak {
@@ -23,23 +22,15 @@ const request_failure_parameters store::failure_defaults = request_failure_param
 
 
 store::store (
-        const std::string& node_address,
-        uint16_t port,
+        transport& t,
         boost::asio::io_service& ios,
         const request_failure_parameters& fp,
         const object_access_parameters& d)
-  : access_overrides_(d),
+  : transport_(t),
+    access_overrides_(d),
     request_failure_defaults_(fp),
-    node_address_(node_address),
-    socket_(ios),
     ios_(ios)
-{
-    using boost::asio::ip::tcp;
-    tcp::resolver resolver(ios);
-    tcp::resolver::query query(node_address, boost::lexical_cast<std::string>(port));
-    tcp::resolver::iterator endpoint_iterator = resolver.resolve(query);
-    boost::asio::connect(socket_, endpoint_iterator);
-}
+{   }
 
 
 store::~store ()
@@ -55,8 +46,8 @@ bucket store::bucket (const key& k)
 
 void store::transmit_request(const std::string& body, response_handler& h, std::chrono::milliseconds timeout)
 {
-    std::shared_ptr<request_with_timeout> request(new request_with_timeout(body, timeout, socket_, h, ios_));
-    request->dispatch();
+    std::shared_ptr<request_with_timeout> request(new request_with_timeout(body, timeout, h, ios_));
+    request->dispatch_via(transport_);
 }
 
 //=============================================================================

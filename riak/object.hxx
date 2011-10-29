@@ -6,7 +6,6 @@
  * \author Andres Jaan Tack <ajtack@gmail.com>
  */
 #pragma once
-#include <boost/asio/streambuf.hpp>
 #include <boost/optional.hpp>
 #include <boost/thread/future.hpp>
 #include <chrono>
@@ -94,15 +93,15 @@ class object
     void put_with_cached_vector_clock (std::shared_ptr<boost::promise<void>>&, const object::value&);
     void on_put_response (
             std::shared_ptr<boost::promise<void>>&,
-            const boost::system::error_code&,
+            const std::error_code&,
             std::size_t,
-            boost::asio::streambuf&) const;
+            const std::string&) const;
     
     void on_fetch_response (
             std::shared_ptr<boost::promise<boost::optional<object::siblings>>>&,
-            const boost::system::error_code&,
+            const std::error_code&,
             std::size_t,
-            boost::asio::streambuf&) const;
+            const std::string&) const;
 };
 
 //=============================================================================

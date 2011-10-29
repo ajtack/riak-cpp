@@ -4,8 +4,6 @@
  *
  * \author Andres Jaan Tack <ajtack@gmail.com>
  */
-#include <boost/asio/streambuf.hpp>
-#include <boost/lexical_cast.hpp>
 #include <riak/bucket.hxx>
 #include <riak/message.hxx>
 #include <riak/riakclient.pb.h>
@@ -33,9 +31,9 @@ object::reference bucket::operator[] (const ::riak::key& k)
 
 void delete_handler_for_promise (
         std::shared_ptr<boost::promise<void>>& p,
-        const boost::system::error_code& error,
+        const std::error_code& error,
         std::size_t bytes_received,
-        boost::asio::streambuf& data)
+        const std::string& data)
 {
     if (not error) {
         if (message::verify_code(message::code::DeleteResponse, bytes_received, data))
@@ -44,7 +42,7 @@ void delete_handler_for_promise (
             p->set_exception(boost::copy_exception(
                     std::invalid_argument("Delete request received a nonsensical response.")));
     } else {
-        p->set_exception(boost::copy_exception(boost::system::system_error(error)));
+        p->set_exception(boost::copy_exception(std::system_error(error)));
     }
 }
 

@@ -9,11 +9,12 @@
 #include <memory>
 #include <riak/object_access_parameters.hxx>
 #include <riak/request_failure_parameters.hxx>
-#include <riak/request_with_timeout.hxx>
+#include <riak/request.hxx>
 
 namespace boost {
     namespace asio { class io_service; }
 }
+namespace riak { class transport; }
 
 //=============================================================================
 namespace riak {
@@ -50,14 +51,12 @@ class store
     static const request_failure_parameters failure_defaults;
   
     /*!
-     * \param node_address should provide the location of a Riak node at which requests may be made.
-     *     Will be resolved via DNS.
+     * \param t will be used to deliver requests. It must survive at least as long as this store.
      * \param ios will be burdened with query transmission and reception events.
      * \post A connection to node_address is made eagerly at the given location. The store is ready for
      *     access.
      */
-    store ( const std::string& node_address,
-            uint16_t port,
+    store ( transport& t,
             boost::asio::io_service& ios,
             const request_failure_parameters& = failure_defaults,
             const object_access_parameters& = access_override_defaults);
@@ -78,16 +77,15 @@ class store
     const ::riak::bucket operator[] (const key& k) const { return const_cast<store*>(this)->bucket(k); }
     
   private:
+    transport& transport_;
     const object_access_parameters access_overrides_;
     const request_failure_parameters request_failure_defaults_;
-    const std::string& node_address_;
-    boost::asio::ip::tcp::socket socket_;
     boost::asio::io_service& ios_;
     
   protected:
     friend class bucket;
     friend class object;
-    typedef request_with_timeout::response_handler response_handler;
+    typedef request::response_handler response_handler;
     void transmit_request(const std::string& request, response_handler& h, std::chrono::milliseconds timeout);
 };
 
