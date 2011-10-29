@@ -20,10 +20,10 @@ int main (int argc, const char* argv[])
     boost::thread worker(std::bind(&run, std::ref(ios)));
     
     announce_with_pause("Ready to connect!");
-    std::shared_ptr<riak::store> my_store(new riak::store("localhost", 8082, ios));
+    riak::store my_store("localhost", 8082, ios);
     
     announce_with_pause("Ready to fetch item test/doc");
-    auto cached_object = my_store->bucket("test")["doc"];
+    auto cached_object = my_store["test"]["doc"];
     auto result = cached_object->fetch();
     
     announce("Waiting for operation to respond...");

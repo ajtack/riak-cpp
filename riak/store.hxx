@@ -41,7 +41,6 @@ namespace riak {
  * the implementation, but it will not invalidate future accesses of any keys in s.
  */
 class store
-      : public std::enable_shared_from_this<store>
 {
   public:    
     /*! Defaults that allow total control to the database administrators. */

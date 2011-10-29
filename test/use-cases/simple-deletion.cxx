@@ -20,10 +20,10 @@ int main (int argc, const char* argv[])
     boost::thread worker(std::bind(&run, std::ref(ios)));
     
     announce_with_pause("Ready to connect!");
-    std::shared_ptr<riak::store> my_store(new riak::store("localhost", 8082, ios));
+    riak::store my_store("localhost", 8082, ios);
     
     announce_with_pause("Ready to delete item test/LX1zMpo2wIBPO4od9VLVPUwdb20");
-    auto result = my_store->bucket("test").unmap("LX1zMpo2wIBPO4od9VLVPUwdb20");
+    auto result = my_store["test"].unmap("LX1zMpo2wIBPO4od9VLVPUwdb20");
     
     announce("Waiting for deletion to respond...");
     try {
