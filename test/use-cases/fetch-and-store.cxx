@@ -2,7 +2,7 @@
 #include <boost/format.hpp>
 #include <boost/thread.hpp>
 #include <functional>
-#include <source/store.hxx>
+#include <riak/store.hxx>
 #include <test/tools/use-case-control.hxx>
 
 using namespace boost;
