@@ -29,7 +29,7 @@ object::reference bucket::operator[] (const ::riak::key& k)
     namespace {
 //=============================================================================
 
-void delete_handler_for_promise (
+bool delete_handler_for_promise (
         std::shared_ptr<boost::promise<void>>& p,
         const std::error_code& error,
         std::size_t bytes_received,
@@ -44,6 +44,8 @@ void delete_handler_for_promise (
     } else {
         p->set_exception(boost::copy_exception(std::system_error(error)));
     }
+    
+    return true;
 }
 
 //=============================================================================

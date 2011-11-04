@@ -46,6 +46,7 @@ class request_with_timeout
     std::chrono::milliseconds timeout_length_;
     boost::asio::deadline_timer timeout_;
     response_handler response_callback_;
+    std::shared_ptr<transport::option_to_terminate_request> option_to_terminate_request_;
     const std::string request_data_;
     
     bool succeeded_;

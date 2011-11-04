@@ -91,13 +91,13 @@ class object
     mutable boost::optional<std::string> cached_vector_clock_;
     
     void put_with_cached_vector_clock (std::shared_ptr<boost::promise<void>>&, const object::value&);
-    void on_put_response (
+    bool on_put_response (
             std::shared_ptr<boost::promise<void>>&,
             const std::error_code&,
             std::size_t,
             const std::string&) const;
     
-    void on_fetch_response (
+    bool on_fetch_response (
             std::shared_ptr<boost::promise<boost::optional<object::siblings>>>&,
             const std::error_code&,
             std::size_t,

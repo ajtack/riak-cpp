@@ -1,0 +1,7 @@
+Import('env')
+Import('library')
+
+unit_tests = env.Program('units', Glob('*.cxx'), LIBS=[library, 'boost_thread-mt', 'pthread', 'boost_system', 'protobuf', 'gmock', 'gtest'])
+env.Alias('test', [unit_tests], unit_tests[0].path)
+env.AlwaysBuild('test')
+Return('unit_tests')

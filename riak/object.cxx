@@ -62,7 +62,7 @@ boost::shared_future<boost::optional<object::siblings>> object::fetch () const
 }
 
 
-void object::on_fetch_response (
+bool object::on_fetch_response (
         std::shared_ptr<boost::promise<boost::optional<object::siblings>>>& p,
         const std::error_code& error,
         std::size_t bytes_received,
@@ -91,6 +91,8 @@ void object::on_fetch_response (
     } else {
         p->set_exception(boost::copy_exception(std::system_error(error)));
     }
+    
+    return true;
 }
 
 
@@ -125,7 +127,7 @@ void object::put_with_cached_vector_clock (
 }
 
 
-void object::on_put_response (
+bool object::on_put_response (
     std::shared_ptr<boost::promise<void>>& p,
     const std::error_code& error,
     std::size_t bytes_received,
@@ -146,6 +148,8 @@ void object::on_put_response (
     } else {
         p->set_exception(boost::copy_exception(std::system_error(error)));
     }
+    
+    return true;
 }
 
 //=============================================================================

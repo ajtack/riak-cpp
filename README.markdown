@@ -17,6 +17,10 @@ For the purpose of more rapid development, as well as hopefully a positive API e
  
     SCons made the buildscript writing process faster, for now. We are open to other systems. In the meantime, compiling shouldn't be hard if you need to write your own build scripts.
 
+ * **Google Test and Google Mock (for building)**
+ 
+    We have found here a use for unit testing, which is greatly facilitated by these two libraries.
+
 Quick Start Guide
 =================
 

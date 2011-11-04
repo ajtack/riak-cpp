@@ -21,17 +21,20 @@ wire_package package_with_code (code message_code, const PbMessageBody& b)
 bool extract_code_if_valid (code& c, std::size_t bytes_available, const std::string& input)
 {
     uint32_t encoded_length;
-    assert (bytes_available >= sizeof(encoded_length));
-    std::istringstream input_data(input);
-    input_data >> encoded_length;
-    uint32_t data_length = ntohl(encoded_length);
-    bytes_available -= sizeof(encoded_length);
-    
-    if (data_length == bytes_available) {
-        uint8_t code_value;
-        input_data >> code_value;
-        c = code_value;
-        return true;
+    if (bytes_available >= sizeof(encoded_length)) {
+        std::istringstream input_data(input);
+        input_data.read(reinterpret_cast<char*>(&encoded_length), sizeof(encoded_length));
+        uint32_t data_length = ntohl(encoded_length);
+        bytes_available -= sizeof(encoded_length);
+
+        if (data_length == bytes_available) {
+            uint8_t code_value;
+            input_data.read(reinterpret_cast<char*>(&code_value), sizeof(code_value));
+            c = code_value;
+            return true;
+        } else {
+            return false;
+        }
     } else {
         return false;
     }
@@ -48,7 +51,9 @@ bool retrieve_body_with_code (
     code received_code;
     bool format_valid = extract_code_if_valid(received_code, bytes_available, input);
     if (format_valid and received_code == expected_code) {
-        return body.ParseFromString(input);
+        size_t size_of_header = 5;  // 32-bit length, 8-bit code
+        std::string payload = input.substr(size_of_header);
+        return body.ParseFromString(payload);
     } else {
         return false;
     }
@@ -100,10 +105,11 @@ bool verify_code(const code& expected_code, std::size_t bytes_received, const st
 
 std::string wire_package::to_string () const
 {
-    uint32_t message_length = htonl(sizeof(static_cast<uint8_t>(message_code_)) + body_.size());
+    uint32_t message_length = sizeof(static_cast<uint8_t>(message_code_)) + body_.size();
+    uint32_t encoded_length = htonl(message_length);
     
     std::string full_message;
-    full_message.append(reinterpret_cast<char*>(&message_length), sizeof(message_length));
+    full_message.append(reinterpret_cast<char*>(&encoded_length), sizeof(encoded_length));
     full_message += message_code_;
     full_message += body_;
     return full_message;

@@ -26,8 +26,10 @@ request_with_timeout::request_with_timeout (
 
 void request_with_timeout::dispatch_via (transport& p)
 { 
-    auto on_write = std::bind(&request_with_timeout::on_response, shared_from_this(), _1, _2, _3);
-    p.deliver(shared_from_this(), on_write);
+    assert(not option_to_terminate_request_);
+    auto on_response = std::bind(&request_with_timeout::on_response, shared_from_this(), _1, _2, _3);
+    auto me = shared_from_this();
+    option_to_terminate_request_ = p.deliver(me, on_response);
     
     timeout_.expires_from_now(boost::posix_time::milliseconds(timeout_length_.count()));
     auto on_timeout = std::bind(&request_with_timeout::on_timeout, shared_from_this(), _1);
@@ -45,10 +47,12 @@ void request_with_timeout::on_response (
     succeeded_ = not (timed_out_ or error);
     if (succeeded_) {
         timeout_.cancel();
-        response_callback_(std::error_code(), bytes_received, raw_data);
+        if (response_callback_(std::error_code(), bytes_received, raw_data))
+            option_to_terminate_request_->exercise();
     } else if (error != std::errc::operation_canceled) {
         timeout_.cancel();
         response_callback_(error, 0, raw_data);
+        option_to_terminate_request_->exercise();
     }
 }
 
@@ -61,8 +65,6 @@ void request_with_timeout::on_timeout (const boost::system::error_code& error)
     if (timed_out_) {
         auto timeout_error = std::make_error_code(std::errc::timed_out);
         response_callback_(timeout_error, 0, "");
-        
-        // TODO: cancel request in connection pool.
     }
 }
 

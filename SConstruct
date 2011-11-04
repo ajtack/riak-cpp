@@ -30,3 +30,8 @@ env.Command(library_build_path + 'riakclient.pb.cc', library_build_path + 'riakc
 riak_protocol = env.Object(library_build_path + 'riakclient.pb.o', library_build_path + 'riakclient.pb.cc')
 library = env.StaticLibrary('riak', [sources, riak_protocol], build_dir=library_build_path)
 
+# Unit tests are compiled and run every time the program is compiled.
+Export('env')
+Export('library')
+unit_tests = SConscript('test/units/SConscript', variant_dir='build/test/units')
+AddPostAction(unit_tests, unit_tests[0].path)

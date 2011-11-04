@@ -9,7 +9,9 @@ namespace riak {
 class transport
 {
   public:
-    class request_closure_signal;
+    class option_to_terminate_request;
+    
+    typedef std::function<void(std::error_code, std::size_t, const std::string&)> response_handler;
       
     virtual ~transport ()
     {   }
@@ -20,18 +22,19 @@ class transport
      *
      * \param r may optionally be maintained by the connection pool beyond this method call.
      * \param h must always be called to indicate either failure or success, including upon
-     *     destruction of the connection pool prior to resolution of a request.
+     *     destruction of the connection pool prior to resolution of a request. Multiple calls
+     *     are permissible, and calls with empty payloads will be considered no-ops.
      */
-    virtual std::unique_ptr<request_closure_signal> deliver (
+    virtual std::shared_ptr<option_to_terminate_request> deliver (
             std::shared_ptr<const request> r,
-            request::response_handler h) = 0;
+            response_handler h) = 0;
 };
 
 
-class transport::request_closure_signal
+class transport::option_to_terminate_request
 {
   public:
-    virtual ~request_closure_signal ()
+    virtual ~option_to_terminate_request ()
     {   }
     
     /*!
@@ -42,7 +45,7 @@ class transport::request_closure_signal
      *
      * This signal must be idempotent.
      */
-    virtual void raise () = 0;
+    virtual void exercise () = 0;
 };
 
 //=============================================================================
