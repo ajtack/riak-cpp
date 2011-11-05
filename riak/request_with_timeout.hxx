@@ -21,7 +21,8 @@ class request_with_timeout
   public:
     /*!
      * Packages a task, but does not send it or begin timeout calculations.
-     * \param timeout is in milliseconds.
+     * \param timeout is in milliseconds. It determines the maximum length of any radio silence
+     *     from the server.
      */
     request_with_timeout (
             const std::string& data,

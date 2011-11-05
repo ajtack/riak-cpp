@@ -15,7 +15,6 @@
 #include <riak/riakclient.pb.h>
 #include <riak/request_failure_parameters.hxx>
 #include <string>
-#include <vector>
 
 //=============================================================================
 namespace riak {
@@ -99,6 +98,7 @@ class object
     
     bool on_fetch_response (
             std::shared_ptr<boost::promise<boost::optional<object::siblings>>>&,
+            std::shared_ptr<std::vector<unsigned char>> buffer,
             const std::error_code&,
             std::size_t,
             const std::string&) const;

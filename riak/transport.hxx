@@ -23,7 +23,7 @@ class transport
      * \param r may optionally be maintained by the connection pool beyond this method call.
      * \param h must always be called to indicate either failure or success, including upon
      *     destruction of the connection pool prior to resolution of a request. Multiple calls
-     *     are permissible, and calls with empty payloads will be considered no-ops.
+     *     are permissible, and calls with empty payloads will affect timeouts.
      */
     virtual std::shared_ptr<option_to_terminate_request> deliver (
             std::shared_ptr<const request> r,

@@ -8,8 +8,10 @@
 #include <riak/bucket.hxx>
 #include <riak/message.hxx>
 #include <riak/object.hxx>
+#include <riak/response.hxx>
 #include <riak/riakclient.pb.h>
 #include <riak/store.hxx>
+#include <vector>
 
 //=============================================================================
 namespace riak {
@@ -56,43 +58,76 @@ boost::shared_future<boost::optional<object::siblings>> object::fetch () const
     
     typedef boost::optional<object::siblings> optval;
     std::shared_ptr<boost::promise<optval>> promise(new boost::promise<optval>());
-    store::response_handler callback = std::bind(&object::on_fetch_response, shared_from_this(), promise, _1, _2, _3);
+    auto buffer = std::make_shared<std::vector<unsigned char>>();
+    store::response_handler callback = std::bind(&object::on_fetch_response, shared_from_this(), promise, buffer, _1, _2, _3);
     store_.transmit_request(query.to_string(), callback, default_request_failure_parameters_.response_timeout);
     return promise->get_future();
 }
 
+//=============================================================================
+    namespace {
+//=============================================================================
+
+bool promise_fulfilled (
+        std::shared_ptr<boost::promise<boost::optional<object::siblings>>>& p,
+        const std::string& request,
+        boost::optional<object::siblings>& cached_siblings,
+        boost::optional<std::string>& cached_vector_clock,
+        boost::mutex& mutex)
+{
+    RpbGetResp response;
+    if (message::retrieve(response, request.size(), request)) {
+        boost::unique_lock<boost::mutex> protect(mutex);
+        if (not (response.has_unchanged() and response.unchanged())) {
+            if (response.has_vclock()) {
+                cached_siblings = response.content();
+                cached_vector_clock = response.vclock();
+                p->set_value(cached_siblings);
+            } else {
+                protect.unlock();
+                p->set_value(boost::optional<object::siblings>());
+            }
+        } else {
+            p->set_value(cached_siblings);
+        }
+    } else {
+        p->set_exception(boost::copy_exception(
+                std::invalid_argument("Riak server's response was nonsensical.")));
+    }
+    
+    // If we received solk, we are done. Else, we are still done.
+    return true;
+}
+        
+//=============================================================================
+    }
+//=============================================================================
 
 bool object::on_fetch_response (
         std::shared_ptr<boost::promise<boost::optional<object::siblings>>>& p,
+        std::shared_ptr<std::vector<unsigned char>> buffer,
         const std::error_code& error,
         std::size_t bytes_received,
         const std::string& input) const
 {
     // Yaaaaay brackets!
     if (not error) {
-        RpbGetResp response;
-        if (message::retrieve(response, bytes_received, input)) {
-            boost::unique_lock<boost::mutex> protect(mutex_);
-            if (not (response.has_unchanged() and response.unchanged())) {
-                if (response.has_vclock()) {
-                    cached_siblings_ = response.content();
-                    cached_vector_clock_ = response.vclock();
-                    p->set_value(cached_siblings_);
-                } else {
-                    p->set_value(boost::optional<object::siblings>());
-                }
-            } else {
-                p->set_value(cached_siblings_);
-            }
+        buffer->insert(buffer->end(), input.begin(), input.end());
+        auto next_response = response::next_partial_response(buffer->begin(), buffer->end());
+        bool matched_whole_request = (next_response != buffer->begin());
+        
+        if (matched_whole_request) {
+            std::string one_request(buffer->begin(), next_response);
+            buffer->erase(buffer->begin(), next_response);
+            return promise_fulfilled(p, one_request, cached_siblings_, cached_vector_clock_, mutex_);
         } else {
-            p->set_exception(boost::copy_exception(
-                    std::invalid_argument("Riak server's response was nonsensical.")));
+            // Wait for more data!
+            return false;
         }
     } else {
         p->set_exception(boost::copy_exception(std::system_error(error)));
+        return true;
     }
-    
-    return true;
 }
 
 

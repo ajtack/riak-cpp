@@ -44,15 +44,24 @@ void request_with_timeout::on_response (
 {
     assert(not succeeded_);
     unique_lock<mutex> serialize(this->mutex_);
-    succeeded_ = not (timed_out_ or error);
-    if (succeeded_) {
-        timeout_.cancel();
-        if (response_callback_(std::error_code(), bytes_received, raw_data))
+    
+    // Whatever happened, it constitutes activity. Stop the timeout timer.
+    timeout_.cancel();
+
+    bool error_condition = (timed_out_ or error);
+    if (not error_condition) {
+        if (response_callback_(std::error_code(), bytes_received, raw_data)) {
             option_to_terminate_request_->exercise();
-    } else if (error != std::errc::operation_canceled) {
-        timeout_.cancel();
-        response_callback_(error, 0, raw_data);
+            succeeded_ = true;
+        } else {
+            timeout_.expires_from_now(boost::posix_time::milliseconds(timeout_length_.count()));
+            auto on_timeout = std::bind(&request_with_timeout::on_timeout, shared_from_this(), _1);
+            timeout_.async_wait(on_timeout);
+        }
+    } else {
         option_to_terminate_request_->exercise();
+        if (error != std::errc::operation_canceled)
+            response_callback_(error, 0, raw_data);
     }
 }
 
