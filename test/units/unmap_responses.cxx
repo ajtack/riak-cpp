@@ -17,9 +17,6 @@ namespace riak {
 
 TEST_F(riak_store_with_mocked_transport, store_survives_nonsense_reply_to_unmap)
 {
-    transport::response_handler request_handler;
-    EXPECT_CALL(transport, deliver(_, _))
-            .WillOnce(DoAll(SaveArg<1>(&request_handler), Return(closure_signal)));
     auto future = store["a"].unmap("document");
     
     EXPECT_CALL(*closure_signal, exercise());
@@ -33,9 +30,6 @@ TEST_F(riak_store_with_mocked_transport, store_survives_nonsense_reply_to_unmap)
 
 TEST_F(riak_store_with_mocked_transport, store_survives_extra_RpbDelResp_from_unmap)
 {
-    transport::response_handler request_handler;
-    EXPECT_CALL(transport, deliver(_, _))
-            .WillOnce(DoAll(SaveArg<1>(&request_handler), Return(closure_signal)));
     auto future = store["a"].unmap("document");
 
     EXPECT_CALL(*closure_signal, exercise());
@@ -48,9 +42,6 @@ TEST_F(riak_store_with_mocked_transport, store_survives_extra_RpbDelResp_from_un
 
 TEST_F(riak_store_with_mocked_transport, store_accepts_well_formed_RbpDelResp)
 {
-    transport::response_handler request_handler;
-    EXPECT_CALL(transport, deliver(_, _))
-            .WillOnce(DoAll(SaveArg<1>(&request_handler), Return(closure_signal)));
     auto future = store["a"].unmap("document");
     
     EXPECT_CALL(*closure_signal, exercise());

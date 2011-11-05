@@ -12,10 +12,12 @@ struct riak_store_with_mocked_transport
        : public ::testing::Test 
 {
     riak_store_with_mocked_transport ();
+    ~riak_store_with_mocked_transport ();
 
     mock::transport transport;
     boost::asio::io_service ios;
     riak::store store;
+    transport::response_handler request_handler;
     std::shared_ptr<mock::transport::option_to_terminate_request> closure_signal;
 };
 

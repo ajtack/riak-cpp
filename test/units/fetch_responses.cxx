@@ -19,9 +19,6 @@ auto canned_fetch_response = RpbGetResp();
 
 TEST_F(riak_store_with_mocked_transport, store_survives_long_nonsense_reply_to_fetch)
 {
-    transport::response_handler request_handler;
-    EXPECT_CALL(transport, deliver(_, _))
-            .WillOnce(DoAll(SaveArg<1>(&request_handler), Return(closure_signal)));
     auto future = store["a"]["document"]->fetch();
     
     EXPECT_CALL(*closure_signal, exercise()).Times(0);
@@ -35,9 +32,6 @@ TEST_F(riak_store_with_mocked_transport, store_survives_long_nonsense_reply_to_f
 
 TEST_F(riak_store_with_mocked_transport, store_survives_extra_data_in_fetch_response)
 {
-    transport::response_handler request_handler;
-    EXPECT_CALL(transport, deliver(_, _))
-            .WillOnce(DoAll(SaveArg<1>(&request_handler), Return(closure_signal)));
     auto future = store["a"]["document"]->fetch();
 
     EXPECT_CALL(*closure_signal, exercise());
@@ -53,9 +47,6 @@ TEST_F(riak_store_with_mocked_transport, store_survives_extra_data_in_fetch_resp
 
 TEST_F(riak_store_with_mocked_transport, store_accepts_well_formed_RbpGetResp)
 {
-    transport::response_handler request_handler;
-    EXPECT_CALL(transport, deliver(_, _))
-            .WillOnce(DoAll(SaveArg<1>(&request_handler), Return(closure_signal)));
     auto future = store["a"]["document"]->fetch();
     
     EXPECT_CALL(*closure_signal, exercise());
@@ -70,9 +61,6 @@ TEST_F(riak_store_with_mocked_transport, store_accepts_well_formed_RbpGetResp)
 
 TEST_F(riak_store_with_mocked_transport, store_accepts_well_formed_response_in_parts)
 {
-    transport::response_handler request_handler;
-    EXPECT_CALL(transport, deliver(_, _))
-            .WillOnce(DoAll(SaveArg<1>(&request_handler), Return(closure_signal)));
     auto future = store["a"]["document"]->fetch();
     
     std::string response_data;
