@@ -23,7 +23,9 @@ class transport
      * \param r may optionally be maintained by the connection pool beyond this method call.
      * \param h must always be called to indicate either failure or success, including upon
      *     destruction of the connection pool prior to resolution of a request. Multiple calls
-     *     are permissible, and calls with empty payloads will affect timeouts.
+     *     are permissible, and calls with empty payloads will affect timeouts. A conforming
+     *     implementation will deliver std::network_reset in case the transport is destroyed
+     *     before the request can be satisfied.
      */
     virtual std::shared_ptr<option_to_terminate_request> deliver (
             std::shared_ptr<const request> r,
@@ -41,7 +43,8 @@ class transport::option_to_terminate_request
      * Indicates to the connection pool that the associated request has ended, whether successfully
      * or otherwise. The connection pool may cancel any ongoing requests by the mechanism it
      * wishes. Following the exercise of a cancel option, the connection pool guarantees it
-     * will make no further callbacks related to the associated request.
+     * will make no further callbacks related to the associated request, and no callback will
+     * be made as part of the exercise.
      *
      * This signal must be idempotent.
      */

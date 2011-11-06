@@ -24,7 +24,9 @@ if ARGUMENTS.get('DEBUG') == 'yes':
 else:
     env = common_env
     
-sources = Glob(library_build_path + '*.cxx', library_build_path + '*.proto')
+sources = Glob(library_build_path + '*.cxx') + \
+          Glob(library_build_path + '*.proto') + \
+          Glob(library_build_path + 'transports/*.cxx')
 env.Command(library_build_path + 'riakclient.pb.h', library_build_path + 'riakclient.proto', "protoc $SOURCE --cpp_out=.")
 env.Command(library_build_path + 'riakclient.pb.cc', library_build_path + 'riakclient.proto', "protoc $SOURCE --cpp_out=.")
 riak_protocol = env.Object(library_build_path + 'riakclient.pb.o', library_build_path + 'riakclient.pb.cc')

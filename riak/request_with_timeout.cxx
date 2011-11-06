@@ -28,8 +28,7 @@ void request_with_timeout::dispatch_via (transport& p)
 { 
     assert(not option_to_terminate_request_);
     auto on_response = std::bind(&request_with_timeout::on_response, shared_from_this(), _1, _2, _3);
-    auto me = shared_from_this();
-    option_to_terminate_request_ = p.deliver(me, on_response);
+    option_to_terminate_request_ = p.deliver(shared_from_this(), on_response);
     
     timeout_.expires_from_now(boost::posix_time::milliseconds(timeout_length_.count()));
     auto on_timeout = std::bind(&request_with_timeout::on_timeout, shared_from_this(), _1);
@@ -60,7 +59,9 @@ void request_with_timeout::on_response (
         }
     } else {
         option_to_terminate_request_->exercise();
-        if (error != std::errc::operation_canceled)
+        
+        // Timeout already satisfied the response callback.
+        if (not timed_out_)
             response_callback_(error, 0, raw_data);
     }
 }

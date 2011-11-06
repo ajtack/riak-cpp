@@ -3,6 +3,7 @@
 #include <boost/thread.hpp>
 #include <functional>
 #include <riak/store.hxx>
+#include <riak/transports/single-serial-socket.hxx>
 #include <test/tools/use-case-control.hxx>
 
 using namespace boost;
@@ -19,8 +20,9 @@ int main (int argc, const char* argv[])
     std::unique_ptr<boost::asio::io_service::work> work(new boost::asio::io_service::work(ios));
     boost::thread worker(std::bind(&run, std::ref(ios)));
     
-    announce_with_pause("Ready to connect!");
-    riak::store my_store("localhost", 8082, ios);
+    announce_with_pause("Connecting!");
+    riak::single_serial_socket connection("localhost", 8082, ios);
+    riak::store my_store(connection, ios);
     
     announce_with_pause("Ready to fetch item test/doc");
     auto cached_object = my_store["test"]["doc"];
