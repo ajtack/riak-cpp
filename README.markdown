@@ -1,4 +1,4 @@
-Riak-Cpp (better name pending™) is a _work-in-progress_ Asychronous [Riak](http://basho.com/products/riak-overview/) client library for advanced C++ compilers.
+Riak-Cpp (better name pending™) is a _work-in-progress_ asychronous [Riak](http://basho.com/products/riak-overview/) client library for advanced C++ compilers.
 
 Requirements
 ============
@@ -29,12 +29,9 @@ Quick Start Guide
 The following program demonstrates how to attach to a Riak store and fetch a key. It also hints at how you might start doing this asynchronously.
 
     #include <boost/asio/io_service.hpp>
-    #include <boost/format.hpp>
     #include <boost/thread.hpp>
     #include <functional>
     #include <source/store.hxx>
-    
-    using namespace boost;
     
     void run(boost::asio::io_service& ios)
     {
@@ -49,22 +46,26 @@ The following program demonstrates how to attach to a Riak store and fetch a key
         boost::thread worker(std::bind(&run, std::ref(ios)));
     
         // Connect to a Riak Store. Note that Riak-Cpp uses the Protocol Buffers API to access Riak.
-        riak::store my_store("localhost", 8082, ios);
+        riak::single_serial_socket connection("localhost", 8082, ios);
+        riak::store my_store(connection, ios);
         
         // Fetch a key synchronously using Futures. In HTTP, this would be the object at test/doc.
         auto result = my_store["test"]["doc"]->fetch();
         result.wait();
         if (result.has_value() and not result.get()) {
-            announce("Fetch appears successful. Value was not found.");
+            std::cout << "Fetch appears successful. Value was not found." << std::endl;
         } else if (result.has_value()) {
             auto val = result.get();
-            announce(str(format("Fetch appears successful. Value is: %1%") % val->Get(0).value()));
+            if (val->size() != 0)
+                std::cout << "Fetch appears successful. First value is: " << val->Get(0).value() << std::endl;
+            else
+                std::cout << "Fetch was successful: no data is mapped at this key." << std::endl;
         } else {
             assert(result.has_exception());
             try {
                 result.get();
             } catch (const std::exception& e) {
-                announce(str(format("Fetch reported exception %1%: %2%.") % typeid(e).name() % e.what()));
+                std::cout << "Fetch reported exception: " << e.what() << std::endl;
             }
         }
         
@@ -79,6 +80,7 @@ We reiterate: This library is a work in progress. As of this moment, the followi
  * Get a value
  * Delete a key
  * Store a value (NB! only after an explicit Fetch on the same object reference)
+ * Roll-Your-Own connection pooling (a default is provided)
  
 In addition, the following are supported:
 
@@ -86,14 +88,7 @@ In addition, the following are supported:
  * Storage access paremeters (R, W, etc.) for all implemented operations.
  * Asynchronous behavior
 
-The following might constitute a roughly-ordered backlog of features yet to be implemented:
-
- 1. Implementation of `Put` operations (with cached vector clocks)
- 2. Callback-based asynchronous behavior (as opposed to boost:futures -- should remove the dependency on `boost::thread`)
- 3. Connection pooling support + Thread safety
- 4. Callback-based sibling resolution hooks
- 5. Implementation of `MapReduce` operations
- 6. …
+Be sure to check out the Github [Issues](http://github.com/ajtack/riak-cpp/issues) to see what's planned next for development.
 
 Contributing
 ============
