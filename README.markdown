@@ -46,7 +46,7 @@ The following program demonstrates how to attach to a Riak store and fetch a key
         boost::thread worker(std::bind(&run, std::ref(ios)));
     
         // Connect to a Riak Store. Note that Riak-Cpp uses the Protocol Buffers API to access Riak.
-        riak::single_serial_socket connection("localhost", 8082, ios);
+        riak::single_serial_socket connection("localhost", 8091, ios);
         riak::store my_store(connection, ios);
         
         // Fetch a key synchronously using Futures. In HTTP, this would be the object at test/doc.
