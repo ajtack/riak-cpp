@@ -74,7 +74,8 @@ class object
         bucket_(bucket),
         key_(k),
         default_request_failure_parameters_(fp),
-        overridden_access_parameters_(p)
+        overridden_access_parameters_(p),
+        cache_is_hot_(false)
     {   }
     
   private:
@@ -88,6 +89,7 @@ class object
     mutable boost::mutex mutex_;
     mutable boost::optional<siblings> cached_siblings_;
     mutable boost::optional<std::string> cached_vector_clock_;
+    mutable bool cache_is_hot_;
     
     void put_with_cached_vector_clock (std::shared_ptr<boost::promise<void>>&, const object::value&);
     bool on_put_response (

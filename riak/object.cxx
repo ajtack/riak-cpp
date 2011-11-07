@@ -28,7 +28,7 @@ boost::shared_future<void> object::put (const object::value& c)
     std::shared_ptr<boost::promise<void>> promise(new boost::promise<void>());
     
     // Set up the appropriate callback.
-    if (cached_vector_clock_) {
+    if (cache_is_hot_) {
         put_with_cached_vector_clock(promise, c);
     } else {
         // Fetch vclock first
@@ -119,7 +119,8 @@ bool object::on_fetch_response (
         if (matched_whole_request) {
             std::string one_request(buffer->begin(), next_response);
             buffer->erase(buffer->begin(), next_response);
-            return promise_fulfilled(p, one_request, cached_siblings_, cached_vector_clock_, mutex_);
+            cache_is_hot_ = promise_fulfilled(p, one_request, cached_siblings_, cached_vector_clock_, mutex_);
+            return cache_is_hot_;
         } else {
             // Wait for more data!
             return false;
@@ -135,12 +136,13 @@ void object::put_with_cached_vector_clock (
         std::shared_ptr<boost::promise<void>>& promise,
         const object::value& c)
 {
-    assert(!! cached_vector_clock_);
+    assert(!! cache_is_hot_);
     
     RpbPutReq request;
     request.set_bucket(this->bucket_);
     request.set_key(this->key());
-    request.set_vclock(*cached_vector_clock_);
+    if (cached_vector_clock_)
+        request.set_vclock(*cached_vector_clock_);
     
     // TODO: Really?
     request.mutable_content()->CopyFrom(c);
