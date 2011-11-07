@@ -31,7 +31,7 @@ The following program demonstrates how to attach to a Riak store and fetch a key
     #include <boost/asio/io_service.hpp>
     #include <boost/thread.hpp>
     #include <functional>
-    #include <source/store.hxx>
+    #include <riak/store.hxx>
     
     void run(boost::asio::io_service& ios)
     {
