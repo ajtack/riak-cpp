@@ -1,6 +1,7 @@
 #pragma once
 #include <memory>
-#include <riak/request.hxx>
+
+namespace riak { class request; }
 
 //=============================================================================
 namespace riak {
