@@ -1,6 +1,5 @@
 #pragma once
 #include <string>
-#include <system_error>
 
 //=============================================================================
 namespace riak {
@@ -9,12 +8,6 @@ namespace riak {
 class request
 {
 public:
-    /*!
-     * Such a handler should return according with whether the request has been completely
-     * satisfied. A return of true will end the request, freeing transport resources.
-     */
-    typedef std::function<bool(std::error_code, std::size_t, const std::string&)> response_handler;
-    
     virtual ~request ()
     {   }
     

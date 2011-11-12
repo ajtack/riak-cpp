@@ -44,7 +44,7 @@ bucket store::bucket (const key& k)
 }
 
 
-void store::transmit_request(const std::string& body, response_handler& h, std::chrono::milliseconds timeout)
+void store::transmit_request(const std::string& body, message::buffering_handler& h, std::chrono::milliseconds timeout)
 {
     std::shared_ptr<request_with_timeout> request(new request_with_timeout(body, timeout, h, ios_));
     request->dispatch_via(transport_);

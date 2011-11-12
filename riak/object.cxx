@@ -8,10 +8,9 @@
 #include <riak/bucket.hxx>
 #include <riak/message.hxx>
 #include <riak/object.hxx>
-#include <riak/response.hxx>
 #include <riak/riakclient.pb.h>
 #include <riak/store.hxx>
-#include <vector>
+#include <system_error>
 
 //=============================================================================
 namespace riak {
@@ -58,9 +57,12 @@ boost::shared_future<boost::optional<object::siblings>> object::fetch () const
     
     typedef boost::optional<object::siblings> optval;
     std::shared_ptr<boost::promise<optval>> promise(new boost::promise<optval>());
-    auto buffer = std::make_shared<std::vector<unsigned char>>();
-    store::response_handler callback = std::bind(&object::on_fetch_response, shared_from_this(), promise, buffer, _1, _2, _3);
-    store_.transmit_request(query.to_string(), callback, default_request_failure_parameters_.response_timeout);
+    message::handler handle_whole_response = std::bind(&object::on_fetch_response, shared_from_this(), promise, _1, _2, _3);
+    auto handle_buffered_response = message::make_buffering_handler(handle_whole_response);
+    
+    store_.transmit_request(
+            query.to_string(), handle_buffered_response, default_request_failure_parameters_.response_timeout);
+    
     return promise->get_future();
 }
 
@@ -105,26 +107,15 @@ bool promise_fulfilled (
 
 bool object::on_fetch_response (
         std::shared_ptr<boost::promise<boost::optional<object::siblings>>>& p,
-        std::shared_ptr<std::vector<unsigned char>> buffer,
         const std::error_code& error,
         std::size_t bytes_received,
-        const std::string& input) const
+        const std::string& request) const
 {
-    // Yaaaaay brackets!
     if (not error) {
-        buffer->insert(buffer->end(), input.begin(), input.end());
-        auto next_response = response::next_partial_response(buffer->begin(), buffer->end());
-        bool matched_whole_request = (next_response != buffer->begin());
-        
-        if (matched_whole_request) {
-            std::string one_request(buffer->begin(), next_response);
-            buffer->erase(buffer->begin(), next_response);
-            cache_is_hot_ = promise_fulfilled(p, one_request, cached_siblings_, cached_vector_clock_, mutex_);
-            return cache_is_hot_;
-        } else {
-            // Wait for more data!
-            return false;
-        }
+        assert(bytes_received != 0);
+        assert(bytes_received == request.size());
+        cache_is_hot_ = promise_fulfilled(p, request, cached_siblings_, cached_vector_clock_, mutex_);
+        return cache_is_hot_;
     } else {
         p->set_exception(boost::copy_exception(std::system_error(error)));
         return true;
@@ -159,8 +150,13 @@ void object::put_with_cached_vector_clock (
     request.set_return_head(false);
     
     auto query = message::encode(request);
-    store::response_handler callback = std::bind(&object::on_put_response, shared_from_this(), promise, _1, _2, _3);
-    store_.transmit_request(query.to_string(), callback, default_request_failure_parameters_.response_timeout);
+    message::handler handle_whole_request =
+            std::bind(&object::on_put_response, shared_from_this(), promise, _1, _2, _3);
+            
+    store_.transmit_request(
+            query.to_string(),
+            handle_whole_request,
+            default_request_failure_parameters_.response_timeout);
 }
 
 

@@ -7,9 +7,9 @@
 #include <riak/bucket.hxx>
 #include <functional>
 #include <memory>
+#include <riak/message.hxx>
 #include <riak/object_access_parameters.hxx>
 #include <riak/request_failure_parameters.hxx>
-#include <riak/request.hxx>
 
 namespace boost {
     namespace asio { class io_service; }
@@ -85,8 +85,8 @@ class store
   protected:
     friend class bucket;
     friend class object;
-    typedef request::response_handler response_handler;
-    void transmit_request(const std::string& request, response_handler& h, std::chrono::milliseconds timeout);
+
+    void transmit_request(const std::string& r, message::buffering_handler& h, std::chrono::milliseconds timeout);
 };
 
 //=============================================================================

@@ -13,7 +13,7 @@ using std::placeholders::_3;
 request_with_timeout::request_with_timeout (
         const std::string& data,
         std::chrono::milliseconds timeout,
-        response_handler& h,
+        message::buffering_handler& h,
         boost::asio::io_service& ios)
   : timeout_length_(timeout),
     timeout_(ios),

@@ -7,6 +7,7 @@
 #include <gtest/gtest.h>
 #include <riak/message.hxx>
 #include <test/units/riak-store-with-mocked-transport.hxx>
+#include <system_error>
 
 using namespace ::testing;
 

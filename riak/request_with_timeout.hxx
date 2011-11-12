@@ -2,6 +2,7 @@
 #include <boost/thread/mutex.hpp>
 #include <chrono>
 #include <memory>
+#include <riak/message.hxx>
 #include <riak/transport.hxx>
 #include <riak/request.hxx>
 #include <system_error>
@@ -27,7 +28,7 @@ class request_with_timeout
     request_with_timeout (
             const std::string& data,
             std::chrono::milliseconds timeout,
-            response_handler& h,
+            message::buffering_handler& h,
             boost::asio::io_service& ios);
     
     /*!
@@ -46,7 +47,7 @@ class request_with_timeout
     mutable boost::mutex mutex_;
     std::chrono::milliseconds timeout_length_;
     boost::asio::deadline_timer timeout_;
-    response_handler response_callback_;
+    message::buffering_handler response_callback_;
     std::shared_ptr<transport::option_to_terminate_request> option_to_terminate_request_;
     const std::string request_data_;
     

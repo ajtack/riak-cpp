@@ -1,12 +1,7 @@
-/*!
- * \file
- * Provides facilities for encoding of Riak protocol buffer messages into over-the-network
- * transmittable queries.
- *
- * \author Andres Jaan tack <ajtack@gmail.com>
- */
 #pragma once
 #include <cstddef>
+#include <functional>
+#include <memory>
 #include <riak/riakclient.pb.h>
 #include <string>
 
@@ -14,6 +9,38 @@
 namespace riak {
     namespace message {
 //=============================================================================
+
+/*!
+ * Such a handler should return according with whether the request has been completely
+ * satisfied (i.e. no additional responses are expected). A return of true indicates
+ * the end of the request, and should free transport resources. If such a handler is
+ * invoked _without_ error, it is guaranteed that the given string constitutes a
+ * complete Riak message of the form:
+ *
+ *     | Rest-of-Message Length (32 bits) | Message Code (8 bits) | Message Body |
+ *
+ * In this case, the given size will equal (rest_of_message_length + sizeof(uint32_t)).
+ *
+ * Beware: It does not guarantee whether that response's payload is sensible. The handler
+ * is responsible for such validation as: is the response of the message type expected?
+ * Is the body correctly encoded?
+ */
+typedef std::function<bool(std::error_code, std::size_t, const std::string&)> handler;
+
+/*!
+ * Exactly as handler, but prepared to accept any data input, including partial responses.
+ */
+typedef handler buffering_handler;
+
+/*!
+ * Builds a buffering handler which can accept streaming data from a network and collect
+ * whole requests from that data.
+ *
+ * \param h will be called only when the returned handler has received a full Riak
+ *     message as per the definition of handler. It will also be called in case an
+ *     error is given from the caller.
+ */
+buffering_handler make_buffering_handler (handler& h);
 
 /*! Specifies the integer code used to identify a message. These values are copy/pasted from riakclient.proto. */
 struct code

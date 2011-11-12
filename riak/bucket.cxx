@@ -9,6 +9,7 @@
 #include <riak/riakclient.pb.h>
 #include <riak/store.hxx>
 #include <string>
+#include <system_error>
 
 //=============================================================================
 namespace riak {
@@ -67,9 +68,13 @@ boost::unique_future<void> bucket::unmap (const ::riak::key& k)
     auto query = message::encode(request);
     
     std::shared_ptr<boost::promise<void>> promise(new boost::promise<void>());
+    message::handler handle_whole_response = std::bind(&delete_handler_for_promise, promise, _1, _2, _3);
+    auto handle_buffered_response = message::make_buffering_handler(handle_whole_response);
     
-    store::response_handler callback = std::bind(&delete_handler_for_promise, promise, _1, _2, _3);
-    store_.transmit_request(query.to_string(), callback, default_request_failure_parameters_.response_timeout);
+    store_.transmit_request(
+            query.to_string(),
+            handle_buffered_response,
+            default_request_failure_parameters_.response_timeout);
     
     return promise->get_future();
 }

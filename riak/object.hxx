@@ -8,7 +8,6 @@
 #pragma once
 #include <boost/optional.hpp>
 #include <boost/thread/future.hpp>
-#include <chrono>
 #include <memory>
 #include <riak/core_types.hxx>
 #include <riak/object_access_parameters.hxx>
@@ -100,7 +99,6 @@ class object
     
     bool on_fetch_response (
             std::shared_ptr<boost::promise<boost::optional<object::siblings>>>&,
-            std::shared_ptr<std::vector<unsigned char>> buffer,
             const std::error_code&,
             std::size_t,
             const std::string&) const;
