@@ -10,7 +10,7 @@ very deeply with client library behavior.
 We Do Not Automate Potential Failure Cases
 ------------------------------------------
 
-bq. "But what could be so hard that we can't automate these tests?!"
+> "But what could be so hard that we can't automate these tests?!"
 
 First off, stop. Nobody is saying it is _impossible_ to automate these tests. We are saying only that it
 is not _cost-effective_ to do so. Intrepid test-minded people are welcome, of course, to prove us wrong.
@@ -62,7 +62,7 @@ Test Resource Structure
 
 In the `test/` folder you will find three sub-directories supporting our testing story.
 
- 1. **`failure-scenarios/`** – These text documents are essentially individual test reproduction steps. Markdown is suggested, but anything expressive and accessible is permitted. The authors are welcome to contribute by writing tests and organizing them by topic.
- 2. **`use-cases/`** – The contents of this folder support our desire to express application scenarios. From this set of use-cases, we should be able to support all of the situations in the `failure_scenarios` folder.
- 3. **`tools/`** – These programmatic tools may be used either by parts of individual use-cases (to make them more easily controllable) or by individual failure scenarios (to induce particular situations programmatically). Dead tools should be removed with prejudice – they are dead because we don't need them to reproduce failures.
- 4. **`units/`** — The parts of the Riak library which are exposed directly to code provided by a user are tested here against all manner of nonsense return values, but not against any thread-safety requirements.
+ 1. `failure-scenarios/` – These text documents are essentially individual test reproduction steps. Markdown is suggested, but anything expressive and accessible is permitted. The authors are welcome to contribute by writing tests and organizing them by topic.
+ 2. `use-cases/` – The contents of this folder support our desire to express application scenarios. From this set of use-cases, we should be able to support all of the situations in the `failure_scenarios` folder.
+ 3. `tools/` – These programmatic tools may be used either by parts of individual use-cases (to make them more easily controllable) or by individual failure scenarios (to induce particular situations programmatically). Dead tools should be removed with prejudice – they are dead because we don't need them to reproduce failures.
+ 4. `units/` — The parts of the Riak library which are exposed directly to code provided by a user are tested here against all manner of nonsense return values, but not against any thread-safety requirements.
