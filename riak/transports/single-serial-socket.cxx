@@ -88,11 +88,17 @@ void single_serial_socket::on_read (
             std::ostringstream reader;
             reader << byte_stream.rdbuf();
             read_buffer_.consume(n_read);
-
-            auto on_read = std::bind(&single_serial_socket::on_read, this, intended_recipient, _1, _2);
+            
+            // We schedule the new read in advance, because we want to be able to cancel a socket
+            // operation to trigger request closure.
+            auto this_ongoing_request = intended_recipient;
+            auto on_read = std::bind(&single_serial_socket::on_read, this, this_ongoing_request, _1, _2);
             socket_.async_read_some(read_buffer_.prepare(1024), on_read);
-
+            
+            // The handler must be allowed to enqueue new requests recursively. Hence
+            // the lack of serialization here.
             auto handler = active_request_->second;
+            serialize.unlock();
             auto error_code = std::make_error_code(static_cast<std::errc>(error.value()));
             handler(error_code, n_read, reader.str());
         } else {
@@ -165,6 +171,7 @@ void single_serial_socket::run_next_request ()
 
 void single_serial_socket::option_to_terminate_request::dequeue_thread_safely ()
 {
+    // TODO: What if this request just became active? Is that possible?
     boost::unique_lock<boost::mutex> serialize(pool_.mutex_);
     pool_.pending_requests_.erase(queue_position_);
     pool_.request_dequeued_.notify_one();

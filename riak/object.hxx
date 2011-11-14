@@ -10,6 +10,7 @@
 #include <boost/thread/future.hpp>
 #include <memory>
 #include <riak/core_types.hxx>
+#include <riak/message.hxx>
 #include <riak/object_access_parameters.hxx>
 #include <riak/riakclient.pb.h>
 #include <riak/request_failure_parameters.hxx>
@@ -90,6 +91,7 @@ class object
     mutable boost::optional<std::string> cached_vector_clock_;
     mutable bool cache_is_hot_;
     
+    void fetch_to (message::buffering_handler& response_handler) const;
     void put_with_cached_vector_clock (std::shared_ptr<boost::promise<void>>&, const object::value&);
     bool on_put_response (
             std::shared_ptr<boost::promise<void>>&,
@@ -98,7 +100,8 @@ class object
             const std::string&) const;
     
     bool on_fetch_response (
-            std::shared_ptr<boost::promise<boost::optional<object::siblings>>>&,
+            std::function<void()> proceed_with_next_step,
+            std::function<void(const std::exception&)> fail,
             const std::error_code&,
             std::size_t,
             const std::string&) const;

@@ -79,7 +79,7 @@ We reiterate: This library is a work in progress. As of this moment, the followi
  
  * Get a value
  * Delete a key
- * Store a value (NB! only after an explicit Fetch on the same object reference)
+ * Store a value
  * Roll-Your-Own connection pooling (a default is provided)
  
 In addition, the following are supported:
