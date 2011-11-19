@@ -1,9 +1,3 @@
-/*!
- * \file
- * Defines a key/value storage class with a hash table backend.
- *
- * \author Andres Jaan Tack <andres.jaan.tack@eesti.ee>
- */
 #include <riak/bucket.hxx>
 #include <functional>
 #include <memory>
