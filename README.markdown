@@ -72,6 +72,34 @@ The following program demonstrates how to attach to a Riak store and fetch a key
         return 0;
     }
 
+How-To: Connection Pooling
+==========================
+
+Riak-Cpp allows you to implement connection pooling in a manner exactly as sophisticated and resource-hungry as you desire. The [current default provided](http://github.com/ajtack/riak-cpp/blob/a1475ce114021fc6f4ca068a5f1eb2c1bee16c51/riak/transports/single-serial-socket.hxx) will only allow one simultaneous concurrent request. A better-performing default is [high on our backlog](http://github.com/ajtack/riak-cpp/issues/7) to fix, but in the meantime the following should help you improve performance in your own system.
+
+Implementing your own connection pool requires subclassing the [riak::transport](http://github.com/ajtack/riak-cpp/blob/a1475ce114021fc6f4ca068a5f1eb2c1bee16c51/riak/transport.hxx) interface. The primary interface element is the `deliver()` function.
+
+    class transport
+    {
+      public:
+        class option_to_terminate_request;    
+        typedef std::function<void(std::error_code, std::size_t, const std::string&)> response_handler;
+
+        virtual std::shared_ptr<option_to_terminate_request> deliver (
+                std::shared_ptr<const request> r,
+                response_handler h) = 0;
+    };
+
+Your implementation of `deliver()` must either dispatch the request in the order you choose or fail to accept the request. You may call h as many times as you want, as data streams in from the server. The implementation may call h before it returns the first time, but the resulting pointer _must not_ be NULL. This pointer (we call it an option) is the only correct way to release connection resources for a request, and will be exercise()'d by the library either upon receipt of a complete request or upon timeout. Your connection pool must be prepared for this event at any time and possibly multiple times, but the implementation (as far as locking, queueing, deferring resource cleanup) is completely up to you. Thus, you will also have to implement its body.
+
+    class transport::option_to_terminate_request
+    {
+      public:
+        virtual void exercise () = 0;
+    };
+
+Notice that, by corollary of the above, you are encouraged but not required to implement `deliver()` in an asynchronous fashion, wherein the method returns immediately even though the response from the server arrives considerably later.
+
 Implementation Status
 =====================
 
@@ -80,10 +108,10 @@ We reiterate: This library is a work in progress. As of this moment, the followi
  * Get a value
  * Delete a key
  * Store a value
- * Roll-Your-Own connection pooling (a default is provided)
  
 In addition, the following are supported:
 
+ * Roll-Your-Own connection pooling (a default is provided)
  * Timeouts for store accesses of any kind
  * Storage access paremeters (R, W, etc.) for all implemented operations.
  * Asynchronous behavior
