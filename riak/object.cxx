@@ -196,12 +196,13 @@ void object::put_with_cached_vector_clock (
     request.set_return_head(false);
     
     auto query = message::encode(request);
-    message::handler handle_whole_request =
+    message::handler handle_whole_response =
             std::bind(&object::on_put_response, shared_from_this(), promise, _1, _2, _3);
-            
+    auto handle_buffered_put_response = message::make_buffering_handler(handle_whole_response);
+
     store_.transmit_request(
             query.to_string(),
-            handle_whole_request,
+            handle_buffered_put_response,
             default_request_failure_parameters_.response_timeout);
 }
 
@@ -218,7 +219,6 @@ bool object::on_put_response (
             boost::unique_lock<boost::mutex> protect(mutex_);
             if (response.has_vclock()   )  cached_vector_clock_ = response.vclock();
             if (response.content_size() > 0)  cached_siblings_ = response.content();
-            // TODO: We assume that key is NULL, because we had to have a key to get here.
             p->set_value();
         } else {
             p->set_exception(boost::copy_exception(
