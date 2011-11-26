@@ -63,7 +63,7 @@ boost::shared_future<void> object::put (const object::value& c)
                         on_failed_fetch,
                         _1, _2, _3);
         
-        auto handle_buffered_fetch_response = message::make_buffering_handler(handle_whole_response);
+        auto handle_buffered_fetch_response = message::make_buffering_handler(handle_fetch_response);
         fetch_to (handle_buffered_fetch_response);
     }
     
