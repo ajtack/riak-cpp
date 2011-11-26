@@ -1,10 +1,3 @@
-/*!
- * \file
- * Implements the core workhorse of the Riak system: an active and asynchronous proxy for individual
- * mapped objects in the key-value store.
- *
- * \author Andres Jaan Tack <ajtack@gmail.com>
- */
 #pragma once
 #include <boost/optional.hpp>
 #include <boost/thread/future.hpp>
@@ -22,12 +15,17 @@ namespace riak {
 
 class store;
 
+/*!
+ * Represents a value stored in Riak at a key in a bucket. Stores and Gets to the Riak server(s)
+ * are coordinated via such an object reference.
+ */
 class object
       : public std::enable_shared_from_this<object>
 { 
   public:
     typedef std::shared_ptr<object> reference;
     typedef ::RpbContent value;
+
     const ::riak::key& key () const { return key_; }
     
     /*!
@@ -42,30 +40,15 @@ class object
      *     receives a response.
      */
     boost::shared_future<void> put (const value& b);
-            // const object_access_parameters& p = store_.object_access_defaults() );
             
     typedef value sibling;
     typedef ::google::protobuf::RepeatedPtrField<sibling> siblings;
-    
-    /*!
-     * If this object is cold (never been fetched), performs a fetch and then a store using the vector
-     * clock therefrom retrieved. If this object has ever been fetched, that vector clock will be used
-     * for the subsequent put.
-     * 
-     * Be aware that a vector clock is maintained among copies of an object instance, but new instances
-     * (gotten from bucket::operator[]) will be cold.
-     * 
-     * \return The body found on the store, as per future semantics.
-     */
-    boost::shared_future<siblings> put_returning_body (const value& b);
-            // const object_access_parameters& p = store_.object_access_defaults() );
     
     /*!
      * Begins an asynchronous read of this value from the store. The retrieved value will not be
      * cached; the only memory of it will be given with the returned future.
      */
     boost::shared_future<boost::optional<siblings>> fetch () const;
-            // const object_access_parameters& p = store_.object_access_defaults() ) const;
     
   protected:
     friend class bucket;
@@ -91,17 +74,26 @@ class object
     mutable boost::optional<std::string> cached_vector_clock_;
     mutable bool cache_is_hot_;
     
+    //
+    // Internal helpers to reduce code duplication.
+    //
+
     void fetch_to (message::buffering_handler& response_handler) const;
     void put_with_cached_vector_clock (std::shared_ptr<boost::promise<void>>&, const object::value&);
-    bool on_put_response (
-            std::shared_ptr<boost::promise<void>>&,
+
+    //
+    // Asynchronous handlers for object operations.
+    //
+
+    bool on_fetch_response (
+            std::function<void()> proceed_with_next_step,
+            std::function<void(const std::exception&)> fail,
             const std::error_code&,
             std::size_t,
             const std::string&) const;
     
-    bool on_fetch_response (
-            std::function<void()> proceed_with_next_step,
-            std::function<void(const std::exception&)> fail,
+    bool on_put_response (
+            std::shared_ptr<boost::promise<void>>&,
             const std::error_code&,
             std::size_t,
             const std::string&) const;

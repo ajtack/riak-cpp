@@ -1,9 +1,3 @@
-/*!
- * \file
- * Implements the generic "store" interface with a simple in-memory hash table.
- *
- * \author Andres Jaan Tack <andres.jaan.tack@eesti.ee>
- */
 #include <riak/store.hxx>
 #include <riak/request_with_timeout.hxx>
 

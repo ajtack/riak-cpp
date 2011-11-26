@@ -1,15 +1,10 @@
-/*!
- * \file
- * Implements asynchronous communication with a Riak server over objects.
- *
- * \author Andres Jaan Tack <ajtack@gmail.com>
- */
 #include <boost/thread/mutex.hpp>
 #include <riak/bucket.hxx>
 #include <riak/message.hxx>
 #include <riak/object.hxx>
 #include <riak/riakclient.pb.h>
 #include <riak/store.hxx>
+#include <riak/utilities.hxx>
 #include <system_error>
 
 //=============================================================================
@@ -20,33 +15,36 @@ using std::placeholders::_1;
 using std::placeholders::_2;
 using std::placeholders::_3;
 
-//=============================================================================
-    namespace {
-//=============================================================================
 
-template <typename T>
-void fulfill_promise (std::shared_ptr<boost::promise<T>> p, const T& v)
+boost::shared_future<boost::optional<object::siblings>> object::fetch () const
 {
-    p->set_value(v);
+    typedef boost::optional<object::siblings> optval;
+    std::shared_ptr<boost::promise<optval>> promise(new boost::promise<optval>());
+    
+    // Type inference should work here, but it doesn't derive correctly. Strange.
+    using std::function;
+    function<void()> on_successful_fetch = std::bind(&fulfill_promise<optval>, promise, std::ref(cached_siblings_));
+    function<void(const std::exception&)> on_failed_fetch = std::bind(&fail_promise<optval>, promise, _1);
+    message::handler handle_whole_response =
+            std::bind(&object::on_fetch_response,
+                    shared_from_this(),
+                    on_successful_fetch,
+                    on_failed_fetch,
+                    _1, _2, _3);
+    
+    auto handle_buffered_response = message::make_buffering_handler(handle_whole_response);
+    fetch_to (handle_buffered_response);
+    
+    return promise->get_future();
 }
 
-
-template <typename T>
-void fail_promise (std::shared_ptr<boost::promise<T>> p, const std::exception& e)
-{
-    p->set_exception(boost::copy_exception(e));
-}
-
-//=============================================================================
-    }   // namespace (anonymous)
-//=============================================================================
 
 boost::shared_future<void> object::put (const object::value& c)
-        // const object_access_parameters& )
 {
     std::shared_ptr<boost::promise<void>> promise(new boost::promise<void>());
     
-    // Set up the appropriate callback.
+    // Here, we try to make sure that the client reads-before-writes, as per Basho client
+    // library implementation guidebook recommendations.
     if (cache_is_hot_) {
         put_with_cached_vector_clock(promise, c);
     } else {
@@ -66,30 +64,6 @@ boost::shared_future<void> object::put (const object::value& c)
         auto handle_buffered_fetch_response = message::make_buffering_handler(handle_fetch_response);
         fetch_to (handle_buffered_fetch_response);
     }
-    
-    return promise->get_future();
-}
-
-
-boost::shared_future<boost::optional<object::siblings>> object::fetch () const
-        // const object_access_parameters& p = store_.object_access_defaults() ) const
-{
-    typedef boost::optional<object::siblings> optval;
-    std::shared_ptr<boost::promise<optval>> promise(new boost::promise<optval>());
-    
-    // Type inference should work here, but it doesn't derive correctly. Strange.
-    using std::function;
-    function<void()> on_successful_fetch = std::bind(&fulfill_promise<optval>, promise, std::ref(cached_siblings_));
-    function<void(const std::exception&)> on_failed_fetch = std::bind(&fail_promise<optval>, promise, _1);
-    message::handler handle_whole_response =
-            std::bind(&object::on_fetch_response,
-                    shared_from_this(),
-                    on_successful_fetch,
-                    on_failed_fetch,
-                    _1, _2, _3);
-    
-    auto handle_buffered_response = message::make_buffering_handler(handle_whole_response);
-    fetch_to (handle_buffered_response);
     
     return promise->get_future();
 }
@@ -114,7 +88,7 @@ void update_cache (
 }
         
 //=============================================================================
-    }
+    }   // namespace (anonymous)
 //=============================================================================
 
 void object::fetch_to (message::buffering_handler& response_handler) const
@@ -213,6 +187,10 @@ bool object::on_put_response (
     std::size_t bytes_received,
     const std::string& input) const
 {
+    // Note: This method assumes that it has been fed whole response objects. Anything less than
+    // five bytes long is going to fail here in strange and wonderful ways. Use
+    // message::make_buffering_handler!
+
     if (not error) {
         RpbPutResp response;
         if (message::retrieve(response, bytes_received, input)) {

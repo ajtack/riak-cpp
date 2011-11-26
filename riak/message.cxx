@@ -89,7 +89,6 @@ wire_package package_with_code (code message_code, const PbMessageBody& b)
     using std::string;
     string encoded_body;
     b.SerializeToString(&encoded_body);
-    
     return wire_package(message_code, encoded_body);
 }
 

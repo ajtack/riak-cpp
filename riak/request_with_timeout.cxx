@@ -10,6 +10,7 @@ using std::placeholders::_1;
 using std::placeholders::_2;
 using std::placeholders::_3;
 
+
 request_with_timeout::request_with_timeout (
         const std::string& data,
         std::chrono::milliseconds timeout,
@@ -36,10 +37,7 @@ void request_with_timeout::dispatch_via (transport& p)
 }
 
 
-void request_with_timeout::on_response (
-        std::error_code error,
-        size_t bytes_received,
-        const std::string& raw_data)
+void request_with_timeout::on_response (std::error_code error, size_t bytes_received, const std::string& raw_data)
 {
     assert(not succeeded_);
     unique_lock<mutex> serialize(this->mutex_);

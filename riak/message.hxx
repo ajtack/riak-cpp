@@ -14,21 +14,21 @@ namespace riak {
  * Such a handler should return according with whether the request has been completely
  * satisfied (i.e. no additional responses are expected). A return of true indicates
  * the end of the request, and should free transport resources. If such a handler is
- * invoked _without_ error, it is guaranteed that the given string constitutes a
+ * invoked _without_ error, it may _assume_ that the given string constitutes a
  * complete Riak message of the form:
  *
  *     | Rest-of-Message Length (32 bits) | Message Code (8 bits) | Message Body |
  *
  * In this case, the given size will equal (rest_of_message_length + sizeof(uint32_t)).
  *
- * Beware: It does not guarantee whether that response's payload is sensible. The handler
+ * Beware: The handler may not assume that the response's payload is sensible. The handler
  * is responsible for such validation as: is the response of the message type expected?
  * Is the body correctly encoded?
  */
 typedef std::function<bool(std::error_code, std::size_t, const std::string&)> handler;
 
 /*!
- * Exactly as handler, but prepared to accept any data input, including partial responses.
+ * Exactly as handler, but prepared to accept any data input, including partial Riak messages.
  */
 typedef handler buffering_handler;
 

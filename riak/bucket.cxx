@@ -1,9 +1,3 @@
-/*!
- * \file
- * Implementation as per header. Currently excludes real functionality (play with hash table).
- *
- * \author Andres Jaan Tack <ajtack@gmail.com>
- */
 #include <riak/bucket.hxx>
 #include <riak/message.hxx>
 #include <riak/riakclient.pb.h>
@@ -30,7 +24,7 @@ object::reference bucket::operator[] (const ::riak::key& k)
     namespace {
 //=============================================================================
 
-bool delete_handler_for_promise (
+bool on_delete_response (
         std::shared_ptr<boost::promise<void>>& p,
         const std::error_code& error,
         std::size_t bytes_received,
@@ -55,6 +49,10 @@ bool delete_handler_for_promise (
 
 boost::unique_future<void> bucket::unmap (const ::riak::key& k)
 {
+    // Note: This method assumes that it has been fed whole response objects. Anything less than
+    // five bytes long is going to fail here in strange and wonderful ways. Use
+    // message::make_buffering_handler!
+
     RpbDelReq request;
     request.set_bucket(this->key());
     request.set_key(k);
@@ -68,7 +66,7 @@ boost::unique_future<void> bucket::unmap (const ::riak::key& k)
     auto query = message::encode(request);
     
     std::shared_ptr<boost::promise<void>> promise(new boost::promise<void>());
-    message::handler handle_whole_response = std::bind(&delete_handler_for_promise, promise, _1, _2, _3);
+    message::handler handle_whole_response = std::bind(&on_delete_response, promise, _1, _2, _3);
     auto handle_buffered_response = message::make_buffering_handler(handle_whole_response);
     
     store_.transmit_request(
