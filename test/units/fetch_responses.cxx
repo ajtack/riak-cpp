@@ -6,7 +6,7 @@
  */
 #include <gtest/gtest.h>
 #include <riak/message.hxx>
-#include <test/units/riak-store-with-mocked-transport.hxx>
+#include <test/units/riak-client-with-mocked-transport.hxx>
 #include <system_error>
 
 using namespace ::testing;
@@ -18,9 +18,9 @@ namespace riak {
 
 auto canned_fetch_response = RpbGetResp();
 
-TEST_F(riak_store_with_mocked_transport, store_survives_long_nonsense_reply_to_fetch)
+TEST_F(riak_client_with_mocked_transport, client_survives_long_nonsense_reply_to_fetch)
 {
-    auto future = store["a"]["document"]->fetch();
+    auto future = client->bucket("a")["document"]->fetch();
     
     EXPECT_CALL(*closure_signal, exercise()).Times(0);
     std::string garbage("uhetnaoutaenosueosaueoas");
@@ -31,9 +31,9 @@ TEST_F(riak_store_with_mocked_transport, store_survives_long_nonsense_reply_to_f
 }
 
 
-TEST_F(riak_store_with_mocked_transport, store_survives_extra_data_in_fetch_response)
+TEST_F(riak_client_with_mocked_transport, client_survives_extra_data_in_fetch_response)
 {
-    auto future = store["a"]["document"]->fetch();
+    auto future = client->bucket("a")["document"]->fetch();
 
     EXPECT_CALL(*closure_signal, exercise());
     std::string response_with_extra;
@@ -46,9 +46,9 @@ TEST_F(riak_store_with_mocked_transport, store_survives_extra_data_in_fetch_resp
 }
 
 
-TEST_F(riak_store_with_mocked_transport, store_accepts_well_formed_RbpGetResp)
+TEST_F(riak_client_with_mocked_transport, client_accepts_well_formed_RbpGetResp)
 {
-    auto future = store["a"]["document"]->fetch();
+    auto future = client->bucket("a")["document"]->fetch();
     
     EXPECT_CALL(*closure_signal, exercise());
     std::string response_data;
@@ -60,9 +60,9 @@ TEST_F(riak_store_with_mocked_transport, store_accepts_well_formed_RbpGetResp)
 }
 
 
-TEST_F(riak_store_with_mocked_transport, store_accepts_well_formed_response_in_parts)
+TEST_F(riak_client_with_mocked_transport, client_accepts_well_formed_response_in_parts)
 {
-    auto future = store["a"]["document"]->fetch();
+    auto future = client->bucket("a")["document"]->fetch();
     
     std::string response_data;
     canned_fetch_response.SerializeToString(&response_data);

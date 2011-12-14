@@ -3,7 +3,7 @@
 #include <riak/message.hxx>
 #include <riak/object.hxx>
 #include <riak/riakclient.pb.h>
-#include <riak/store.hxx>
+#include <riak/client.hxx>
 #include <riak/utilities.hxx>
 #include <system_error>
 
@@ -106,7 +106,7 @@ void object::fetch_to (message::buffering_handler& response_handler) const
     request.set_deletedvclock(true);
     auto query = message::encode(request);
 
-    store_.transmit_request(
+    client_->transmit_request(
             query.to_string(), response_handler, default_request_failure_parameters_.response_timeout);
 }
 
@@ -174,7 +174,7 @@ void object::put_with_cached_vector_clock (
             std::bind(&object::on_put_response, shared_from_this(), promise, _1, _2, _3);
     auto handle_buffered_put_response = message::make_buffering_handler(handle_whole_response);
 
-    store_.transmit_request(
+    client_->transmit_request(
             query.to_string(),
             handle_buffered_put_response,
             default_request_failure_parameters_.response_timeout);

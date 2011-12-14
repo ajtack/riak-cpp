@@ -1,4 +1,4 @@
-#include <test/units/riak-store-with-mocked-transport.hxx>
+#include <test/units/riak-client-with-mocked-transport.hxx>
 
 using namespace ::testing;
 
@@ -7,8 +7,8 @@ namespace riak {
     namespace test {
 //=============================================================================
 
-riak_store_with_mocked_transport::riak_store_with_mocked_transport ()
-  : store(transport, ios)
+riak_client_with_mocked_transport::riak_client_with_mocked_transport ()
+  : client(::riak::make_client(transport, ios))
   , closure_signal(new mock::transport::option_to_terminate_request)
 {
     EXPECT_CALL(transport, deliver(_, _))
@@ -17,7 +17,7 @@ riak_store_with_mocked_transport::riak_store_with_mocked_transport ()
 
 
 // Defining this explicitly speeds up compilation time.
-riak_store_with_mocked_transport::~riak_store_with_mocked_transport ()
+riak_client_with_mocked_transport::~riak_client_with_mocked_transport ()
 {   }
 
 //=============================================================================

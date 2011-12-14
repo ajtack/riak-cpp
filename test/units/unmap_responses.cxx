@@ -6,7 +6,7 @@
  */
 #include <gtest/gtest.h>
 #include <riak/message.hxx>
-#include <test/units/riak-store-with-mocked-transport.hxx>
+#include <test/units/riak-client-with-mocked-transport.hxx>
 #include <system_error>
 
 using namespace ::testing;
@@ -16,9 +16,9 @@ namespace riak {
     namespace test {
 //=============================================================================
 
-TEST_F(riak_store_with_mocked_transport, store_survives_nonsense_reply_to_unmap)
+TEST_F(riak_client_with_mocked_transport, client_survives_nonsense_reply_to_unmap)
 {
-    auto future = store["a"].unmap("document");
+    auto future = client->bucket("a").unmap("document");
     
     EXPECT_CALL(*closure_signal, exercise()).Times(0);
     std::string garbage("uhetnaoutaenosueosaueoas");
@@ -29,9 +29,9 @@ TEST_F(riak_store_with_mocked_transport, store_survives_nonsense_reply_to_unmap)
 }
 
 
-TEST_F(riak_store_with_mocked_transport, store_survives_extra_RpbDelResp_from_unmap)
+TEST_F(riak_client_with_mocked_transport, client_survives_extra_RpbDelResp_from_unmap)
 {
-    auto future = store["a"].unmap("document");
+    auto future = client->bucket("a").unmap("document");
 
     EXPECT_CALL(*closure_signal, exercise());
     riak::message::wire_package long_reply(riak::message::code::DeleteResponse, "atnhueoauheas(garbage)");
@@ -41,9 +41,9 @@ TEST_F(riak_store_with_mocked_transport, store_survives_extra_RpbDelResp_from_un
 }
 
 
-TEST_F(riak_store_with_mocked_transport, store_accepts_well_formed_RbpDelResp)
+TEST_F(riak_client_with_mocked_transport, client_accepts_well_formed_RbpDelResp)
 {
-    auto future = store["a"].unmap("document");
+    auto future = client->bucket("a").unmap("document");
     
     EXPECT_CALL(*closure_signal, exercise());
     riak::message::wire_package clean_reply(riak::message::code::DeleteResponse, "");
@@ -53,9 +53,9 @@ TEST_F(riak_store_with_mocked_transport, store_accepts_well_formed_RbpDelResp)
 }
 
 
-TEST_F(riak_store_with_mocked_transport, store_accepts_well_formed_unmap_response_in_parts)
+TEST_F(riak_client_with_mocked_transport, client_accepts_well_formed_unmap_response_in_parts)
 {
-    auto future = store["a"].unmap("document");
+    auto future = client->bucket("a").unmap("document");
     
     std::string response_data;
     std::string canned_delete_response = "";   // Deletes are only message code responses.

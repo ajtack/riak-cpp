@@ -2,7 +2,7 @@
 #include <boost/format.hpp>
 #include <boost/thread.hpp>
 #include <functional>
-#include <riak/store.hxx>
+#include <riak/client.hxx>
 #include <riak/transports/single-serial-socket.hxx>
 #include <test/tools/use-case-control.hxx>
 
@@ -22,12 +22,12 @@ int main (int argc, const char* argv[])
     
     announce_with_pause("Ready to connect!");
     riak::single_serial_socket connection("localhost", 8082, ios);
-    riak::store my_store(connection, ios);
+    auto my_store = riak::make_client(connection, ios);
     
     announce_with_pause("Ready to store \"foodiddy howdoo!\" to item test/doc");
     RpbContent c;
     c.set_value("foodiddy howdoo!");
-    auto result = my_store["test"]["doc"]->put(c);
+    auto result = my_store->bucket("test")["doc"]->put(c);
     
     announce("Waiting for operation to respond...");
     try {

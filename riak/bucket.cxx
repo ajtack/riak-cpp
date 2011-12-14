@@ -1,7 +1,7 @@
 #include <riak/bucket.hxx>
 #include <riak/message.hxx>
 #include <riak/riakclient.pb.h>
-#include <riak/store.hxx>
+#include <riak/client.hxx>
 #include <string>
 #include <system_error>
 
@@ -17,7 +17,7 @@ using std::placeholders::_3;
 object::reference bucket::operator[] (const ::riak::key& k)
 {
     return object::reference(
-            new object(store_, this->key(), k, default_request_failure_parameters_, overridden_access_parameters_));
+            new object(client_, this->key(), k, default_request_failure_parameters_, overridden_access_parameters_));
 }
 
 //=============================================================================
@@ -69,7 +69,7 @@ boost::unique_future<void> bucket::unmap (const ::riak::key& k)
     message::handler handle_whole_response = std::bind(&on_delete_response, promise, _1, _2, _3);
     auto handle_buffered_response = message::make_buffering_handler(handle_whole_response);
     
-    store_.transmit_request(
+    client_->transmit_request(
             query.to_string(),
             handle_buffered_response,
             default_request_failure_parameters_.response_timeout);

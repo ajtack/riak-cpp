@@ -13,7 +13,7 @@
 namespace riak {
 //=============================================================================
 
-class store;
+class client;
 
 /*!
  * Represents a value stored in Riak at a key in a bucket. Stores and Gets to the Riak server(s)
@@ -52,8 +52,12 @@ class object
     
   protected:
     friend class bucket;
-    object (store& s, const ::riak::key& bucket, const ::riak::key& k, const request_failure_parameters& fp, const object_access_parameters& p)
-      : store_(s),
+    object (std::shared_ptr<client> c,
+            const ::riak::key& bucket,
+            const ::riak::key& k,
+            const request_failure_parameters& fp,
+            const object_access_parameters& p)
+      : client_(c),
         bucket_(bucket),
         key_(k),
         default_request_failure_parameters_(fp),
@@ -62,7 +66,7 @@ class object
     {   }
     
   private:
-    store& store_;
+    std::shared_ptr<client> client_;
     const ::riak::key bucket_;
     const ::riak::key key_;
     

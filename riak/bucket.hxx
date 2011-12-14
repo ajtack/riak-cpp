@@ -15,7 +15,7 @@
 namespace riak {
 //=============================================================================
 
-class store;
+class client;
 
 /*!
  * A remote collection of "objects" indexed by "key". Copying a particular instance does not modify
@@ -53,7 +53,7 @@ class bucket
     const ::riak::key& key () const { return key_; }
     
   protected:
-    friend class store;
+    friend class client;
     friend class object;
     
     /*!
@@ -61,15 +61,18 @@ class bucket
      * \param p will be used for unmapping operations by default. It will also be given as cconfiguration
      *     overrides for any objects referenced through this bucket.
      */
-    bucket (store& s, const ::riak::key& k, const request_failure_parameters& fp, const object_access_parameters& p)
-      : store_(s),
+    bucket (std::shared_ptr<client> c,
+            const ::riak::key& k,
+            const request_failure_parameters& fp,
+            const object_access_parameters& p)
+      : client_(c),
         key_(k),
         default_request_failure_parameters_(fp),
         overridden_access_parameters_(p)
     {   }
     
   private:
-    store& store_;
+    std::shared_ptr<client> client_;
     const ::riak::key key_;
     request_failure_parameters default_request_failure_parameters_;
     object_access_parameters overridden_access_parameters_;

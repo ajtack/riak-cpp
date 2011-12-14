@@ -1,4 +1,4 @@
-#include <test/units/riak-store-mocked-for-two-requests.hxx>
+#include <test/units/riak-client-mocked-for-two-requests.hxx>
 
 using namespace ::testing;
 
@@ -7,8 +7,8 @@ namespace riak {
     namespace test {
 //=============================================================================
 
-riak_store_mocked_for_two_requests::riak_store_mocked_for_two_requests ()
-  : store(transport, ios)
+riak_client_mocked_for_two_requests::riak_client_mocked_for_two_requests ()
+  : client(::riak::make_client(transport, ios))
   , close_request_1(new mock::transport::option_to_terminate_request)
   , close_request_2(new mock::transport::option_to_terminate_request)
 {
@@ -21,7 +21,7 @@ riak_store_mocked_for_two_requests::riak_store_mocked_for_two_requests ()
 
 
 // Defining this explicitly speeds up compilation time.
-riak_store_mocked_for_two_requests::~riak_store_mocked_for_two_requests ()
+riak_client_mocked_for_two_requests::~riak_client_mocked_for_two_requests ()
 {   }
 
 //=============================================================================

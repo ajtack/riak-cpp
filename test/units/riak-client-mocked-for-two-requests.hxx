@@ -1,6 +1,6 @@
 #pragma once
 #include <boost/asio/io_service.hpp>
-#include <riak/store.hxx>
+#include <riak/client.hxx>
 #include <test/mocks/transport.hxx>
 
 //=============================================================================
@@ -8,17 +8,19 @@ namespace riak {
     namespace test {
 //=============================================================================
 
-struct riak_store_with_mocked_transport
+struct riak_client_mocked_for_two_requests
        : public ::testing::Test 
 {
-    riak_store_with_mocked_transport ();
-    ~riak_store_with_mocked_transport ();
+    riak_client_mocked_for_two_requests ();
+    ~riak_client_mocked_for_two_requests ();
 
     mock::transport transport;
     boost::asio::io_service ios;
-    riak::store store;
-    transport::response_handler request_handler;
-    std::shared_ptr<mock::transport::option_to_terminate_request> closure_signal;
+    std::shared_ptr<riak::client> client;
+    transport::response_handler request_handler_1;
+    transport::response_handler request_handler_2;
+    std::shared_ptr<mock::transport::option_to_terminate_request> close_request_1;
+    std::shared_ptr<mock::transport::option_to_terminate_request> close_request_2;
 };
 
 //=============================================================================

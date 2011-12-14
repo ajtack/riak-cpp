@@ -6,7 +6,7 @@
  */
 #include <gtest/gtest.h>
 #include <riak/message.hxx>
-#include <test/units/riak-store-mocked-for-two-requests.hxx>
+#include <test/units/riak-client-mocked-for-two-requests.hxx>
 #include <system_error>
 
 using namespace ::testing;
@@ -39,11 +39,11 @@ const std::string clean_put_reply ()
         }   // namespace (anonymous)
 //=============================================================================
 
-TEST_F(riak_store_mocked_for_two_requests, store_survives_long_nonsense_reply_to_put)
+TEST_F(riak_client_mocked_for_two_requests, client_survives_long_nonsense_reply_to_put)
 {
     RpbContent val;
     val.set_value("balooooooga!");
-    auto future = store["a"]["document"]->put(val);
+    auto future = client->bucket("a")["document"]->put(val);
 
     // Respond to the read-before-write GET.
     EXPECT_CALL(*close_request_1, exercise()).Times(1);
@@ -58,11 +58,11 @@ TEST_F(riak_store_mocked_for_two_requests, store_survives_long_nonsense_reply_to
 }
 
 
-TEST_F(riak_store_mocked_for_two_requests, store_survives_extra_data_in_put_response)
+TEST_F(riak_client_mocked_for_two_requests, client_survives_extra_data_in_put_response)
 {
     RpbContent val;
     val.set_value("balooooooga!");
-    auto future = store["a"]["document"]->put(val);
+    auto future = client->bucket("a")["document"]->put(val);
 
     // Respond to the read-before-write GET.
     EXPECT_CALL(*close_request_1, exercise()).Times(1);
@@ -77,12 +77,12 @@ TEST_F(riak_store_mocked_for_two_requests, store_survives_extra_data_in_put_resp
 }
 
 
-TEST_F(riak_store_mocked_for_two_requests, store_accepts_well_formed_RbpPutResp)
+TEST_F(riak_client_mocked_for_two_requests, client_accepts_well_formed_RbpPutResp)
 {
-    // Run the actual store.
+    // Run the actual client.
     RpbContent val;
     val.set_value("balooooooga!");
-    auto future = store["a"]["document"]->put(val);
+    auto future = client->bucket("a")["document"]->put(val);
 
     // Respond to the read-before-write GET.
     EXPECT_CALL(*close_request_1, exercise()).Times(1);
@@ -96,12 +96,12 @@ TEST_F(riak_store_mocked_for_two_requests, store_accepts_well_formed_RbpPutResp)
 }
 
 
-TEST_F(riak_store_mocked_for_two_requests, store_accepts_well_formed_put_response_in_parts)
+TEST_F(riak_client_mocked_for_two_requests, client_accepts_well_formed_put_response_in_parts)
 {
-    // Run the actual store.
+    // Run the actual client.
     RpbContent val;
     val.set_value("balooooooga!");
-    auto future = store["a"]["document"]->put(val);
+    auto future = client->bucket("a")["document"]->put(val);
 
     // Respond to the read-before-write GET.
     EXPECT_CALL(*close_request_1, exercise()).Times(1);
