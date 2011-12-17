@@ -16,23 +16,23 @@ const request_failure_parameters client::failure_defaults = request_failure_para
 
 
 std::shared_ptr<client> make_client (
-        transport& t,
+        transport::delivery_provider d,
         boost::asio::io_service& ios,
         const request_failure_parameters& failure_defaults,
         const object_access_parameters& access_override_defaults)
 {
-    std::shared_ptr<client> ptr(new client(t, ios, failure_defaults, access_override_defaults));
+    std::shared_ptr<client> ptr(new client(d, ios, failure_defaults, access_override_defaults));
     return ptr;
 }
 
 
 client::client (
-        transport& t,
+        transport::delivery_provider d,
         boost::asio::io_service& ios,
         const request_failure_parameters& fp,
-        const object_access_parameters& d)
-  : transport_(t),
-    access_overrides_(d),
+        const object_access_parameters& ao)
+  : deliver_request_(d),
+    access_overrides_(ao),
     request_failure_defaults_(fp),
     ios_(ios)
 {   }
@@ -49,7 +49,7 @@ void client::transmit_request(const std::string& body, message::buffering_handle
 {
     assert(this);
     std::shared_ptr<request_with_timeout> request(new request_with_timeout(body, timeout, h, ios_));
-    request->dispatch_via(transport_);
+    request->dispatch_via(deliver_request_);
 }
 
 //=============================================================================

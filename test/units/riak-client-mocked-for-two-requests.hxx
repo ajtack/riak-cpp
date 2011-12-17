@@ -19,8 +19,8 @@ struct riak_client_mocked_for_two_requests
     std::shared_ptr<riak::client> client;
     transport::response_handler request_handler_1;
     transport::response_handler request_handler_2;
-    std::shared_ptr<mock::transport::option_to_terminate_request> close_request_1;
-    std::shared_ptr<mock::transport::option_to_terminate_request> close_request_2;
+    mock::transport::option_to_terminate_request close_request_1;
+    mock::transport::option_to_terminate_request close_request_2;
 };
 
 //=============================================================================

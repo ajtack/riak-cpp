@@ -25,11 +25,12 @@ request_with_timeout::request_with_timeout (
 {   }
 
 
-void request_with_timeout::dispatch_via (transport& p)
-{ 
-    assert(not option_to_terminate_request_);
+void request_with_timeout::dispatch_via (transport::delivery_provider& deliver)
+{
+    // The request can only be sent once.
+    assert(not terminate_request_ and not succeeded_ and not timed_out_);
     auto on_response = std::bind(&request_with_timeout::on_response, shared_from_this(), _1, _2, _3);
-    option_to_terminate_request_ = p.deliver(shared_from_this(), on_response);
+    terminate_request_ = deliver(shared_from_this(), on_response);
     
     timeout_.expires_from_now(boost::posix_time::milliseconds(timeout_length_.count()));
     auto on_timeout = std::bind(&request_with_timeout::on_timeout, shared_from_this(), _1);
@@ -39,7 +40,7 @@ void request_with_timeout::dispatch_via (transport& p)
 
 void request_with_timeout::on_response (std::error_code error, size_t bytes_received, const std::string& raw_data)
 {
-    assert(not succeeded_);
+    assert(not succeeded_ and (!! terminate_request_));
     unique_lock<mutex> serialize(this->mutex_);
     
     // Whatever happened, it constitutes activity. Stop the timeout timer.
@@ -48,7 +49,7 @@ void request_with_timeout::on_response (std::error_code error, size_t bytes_rece
     bool error_condition = (timed_out_ or error);
     if (not error_condition) {
         if (response_callback_(std::error_code(), bytes_received, raw_data)) {
-            option_to_terminate_request_->exercise();
+            (*terminate_request_)();
             succeeded_ = true;
         } else {
             timeout_.expires_from_now(boost::posix_time::milliseconds(timeout_length_.count()));
@@ -56,7 +57,7 @@ void request_with_timeout::on_response (std::error_code error, size_t bytes_rece
             timeout_.async_wait(on_timeout);
         }
     } else {
-        option_to_terminate_request_->exercise();
+        (*terminate_request_)();
         
         // Timeout already satisfied the response callback.
         if (not timed_out_)

@@ -46,7 +46,7 @@ TEST_F(riak_client_mocked_for_two_requests, client_survives_long_nonsense_reply_
     auto future = client->bucket("a")["document"]->put(val);
 
     // Respond to the read-before-write GET.
-    EXPECT_CALL(*close_request_1, exercise()).Times(1);
+    EXPECT_CALL(close_request_1, exercise()).Times(1);
     request_handler_1(std::error_code(), clean_fetch_reply().size(), clean_fetch_reply());
 
     // Proceed with PUT response.
@@ -65,12 +65,12 @@ TEST_F(riak_client_mocked_for_two_requests, client_survives_extra_data_in_put_re
     auto future = client->bucket("a")["document"]->put(val);
 
     // Respond to the read-before-write GET.
-    EXPECT_CALL(*close_request_1, exercise()).Times(1);
+    EXPECT_CALL(close_request_1, exercise()).Times(1);
     request_handler_1(std::error_code(), clean_fetch_reply().size(), clean_fetch_reply());
 
     // Proceed with PUT response.
     std::string long_reply = clean_put_reply() + "aueoauseonsauenats";
-    EXPECT_CALL(*close_request_2, exercise()).Times(1);
+    EXPECT_CALL(close_request_2, exercise()).Times(1);
     request_handler_2(std::error_code(), long_reply.size(), long_reply);
     ASSERT_TRUE(future.is_ready());
     ASSERT_TRUE(future.has_value());
@@ -85,11 +85,11 @@ TEST_F(riak_client_mocked_for_two_requests, client_accepts_well_formed_RbpPutRes
     auto future = client->bucket("a")["document"]->put(val);
 
     // Respond to the read-before-write GET.
-    EXPECT_CALL(*close_request_1, exercise()).Times(1);
+    EXPECT_CALL(close_request_1, exercise()).Times(1);
     request_handler_1(std::error_code(), clean_fetch_reply().size(), clean_fetch_reply());
 
     // Proceed with PUT response.
-    EXPECT_CALL(*close_request_2, exercise()).Times(1);
+    EXPECT_CALL(close_request_2, exercise()).Times(1);
     request_handler_2(std::error_code(), clean_put_reply().size(), clean_put_reply());
     ASSERT_TRUE(future.is_ready());
     ASSERT_TRUE(future.has_value());
@@ -104,7 +104,7 @@ TEST_F(riak_client_mocked_for_two_requests, client_accepts_well_formed_put_respo
     auto future = client->bucket("a")["document"]->put(val);
 
     // Respond to the read-before-write GET.
-    EXPECT_CALL(*close_request_1, exercise()).Times(1);
+    EXPECT_CALL(close_request_1, exercise()).Times(1);
     request_handler_1(std::error_code(), clean_fetch_reply().size(), clean_fetch_reply());
 
     // Proceed with the two-part Put response
@@ -118,7 +118,7 @@ TEST_F(riak_client_mocked_for_two_requests, client_accepts_well_formed_put_respo
     ASSERT_TRUE(not future.is_ready());
 
     // ... part 2
-    EXPECT_CALL(*close_request_2, exercise()).Times(1);
+    EXPECT_CALL(close_request_2, exercise()).Times(1);
     request_handler_2(std::error_code(), second_half.size(), second_half);
     ASSERT_TRUE(future.is_ready());
     ASSERT_TRUE(future.has_value());

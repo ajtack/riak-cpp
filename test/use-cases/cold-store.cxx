@@ -21,7 +21,7 @@ int main (int argc, const char* argv[])
     boost::thread worker(std::bind(&run, std::ref(ios)));
     
     announce_with_pause("Ready to connect!");
-    riak::single_serial_socket connection("localhost", 8082, ios);
+    auto connection = riak::make_single_socket_transport("localhost", 8082, ios);
     auto my_store = riak::make_client(connection, ios);
     
     announce_with_pause("Ready to store \"foodiddy howdoo!\" to item test/doc");

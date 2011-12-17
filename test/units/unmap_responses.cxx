@@ -20,7 +20,7 @@ TEST_F(riak_client_with_mocked_transport, client_survives_nonsense_reply_to_unma
 {
     auto future = client->bucket("a").unmap("document");
     
-    EXPECT_CALL(*closure_signal, exercise()).Times(0);
+    EXPECT_CALL(closure_signal, exercise()).Times(0);
     std::string garbage("uhetnaoutaenosueosaueoas");
     request_handler(std::error_code(), garbage.size(), garbage);
     
@@ -33,7 +33,7 @@ TEST_F(riak_client_with_mocked_transport, client_survives_extra_RpbDelResp_from_
 {
     auto future = client->bucket("a").unmap("document");
 
-    EXPECT_CALL(*closure_signal, exercise());
+    EXPECT_CALL(closure_signal, exercise());
     riak::message::wire_package long_reply(riak::message::code::DeleteResponse, "atnhueoauheas(garbage)");
     request_handler(std::error_code(), long_reply.to_string().size(), long_reply.to_string());
     ASSERT_TRUE(future.is_ready());
@@ -45,7 +45,7 @@ TEST_F(riak_client_with_mocked_transport, client_accepts_well_formed_RbpDelResp)
 {
     auto future = client->bucket("a").unmap("document");
     
-    EXPECT_CALL(*closure_signal, exercise());
+    EXPECT_CALL(closure_signal, exercise());
     riak::message::wire_package clean_reply(riak::message::code::DeleteResponse, "");
     request_handler(std::error_code(), clean_reply.to_string().size(), clean_reply.to_string());
     ASSERT_TRUE(future.is_ready());
@@ -67,7 +67,7 @@ TEST_F(riak_client_with_mocked_transport, client_accepts_well_formed_unmap_respo
     request_handler(std::error_code(), first_half.size(), first_half);
     ASSERT_TRUE(not future.is_ready());
 
-    EXPECT_CALL(*closure_signal, exercise());
+    EXPECT_CALL(closure_signal, exercise());
     request_handler(std::error_code(), second_half.size(), second_half);
     ASSERT_TRUE(future.is_ready());
     ASSERT_TRUE(future.has_value());

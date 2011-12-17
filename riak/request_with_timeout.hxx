@@ -1,5 +1,6 @@
 #include <boost/asio/deadline_timer.hpp>
 #include <boost/thread/mutex.hpp>
+#include <boost/optional.hpp>
 #include <chrono>
 #include <memory>
 #include <riak/message.hxx>
@@ -36,7 +37,7 @@ class request_with_timeout
      * \pre There must exist a shared pointer to this request at the time of dispatch. It may be
      *     reset as soon as the request is dispatched.
      */
-    void dispatch_via (transport& p);
+    void dispatch_via (transport::delivery_provider& p);
     
     virtual const std::string& payload () const { return request_data_; }
 
@@ -48,7 +49,7 @@ class request_with_timeout
     std::chrono::milliseconds timeout_length_;
     boost::asio::deadline_timer timeout_;
     message::buffering_handler response_callback_;
-    std::shared_ptr<transport::option_to_terminate_request> option_to_terminate_request_;
+    boost::optional<transport::option_to_terminate_request> terminate_request_;
     const std::string request_data_;
     
     bool succeeded_;

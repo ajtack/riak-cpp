@@ -22,7 +22,7 @@ TEST_F(riak_client_with_mocked_transport, client_survives_long_nonsense_reply_to
 {
     auto future = client->bucket("a")["document"]->fetch();
     
-    EXPECT_CALL(*closure_signal, exercise()).Times(0);
+    EXPECT_CALL(closure_signal, exercise()).Times(0);
     std::string garbage("uhetnaoutaenosueosaueoas");
     request_handler(std::error_code(), garbage.size(), garbage);
     
@@ -35,7 +35,7 @@ TEST_F(riak_client_with_mocked_transport, client_survives_extra_data_in_fetch_re
 {
     auto future = client->bucket("a")["document"]->fetch();
 
-    EXPECT_CALL(*closure_signal, exercise());
+    EXPECT_CALL(closure_signal, exercise());
     std::string response_with_extra;
     canned_fetch_response.SerializeToString(&response_with_extra);
     riak::message::wire_package correct_reply(riak::message::code::GetResponse, response_with_extra);
@@ -50,7 +50,7 @@ TEST_F(riak_client_with_mocked_transport, client_accepts_well_formed_RbpGetResp)
 {
     auto future = client->bucket("a")["document"]->fetch();
     
-    EXPECT_CALL(*closure_signal, exercise());
+    EXPECT_CALL(closure_signal, exercise());
     std::string response_data;
     canned_fetch_response.SerializeToString(&response_data);
     riak::message::wire_package clean_reply(riak::message::code::GetResponse, response_data);
@@ -74,7 +74,7 @@ TEST_F(riak_client_with_mocked_transport, client_accepts_well_formed_response_in
     request_handler(std::error_code(), first_half.size(), first_half);
     ASSERT_TRUE(not future.is_ready());
 
-    EXPECT_CALL(*closure_signal, exercise());
+    EXPECT_CALL(closure_signal, exercise());
     request_handler(std::error_code(), second_half.size(), second_half);
     ASSERT_TRUE(future.is_ready());
     ASSERT_TRUE(future.has_value());
