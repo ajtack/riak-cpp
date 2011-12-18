@@ -20,7 +20,7 @@ namespace riak {
 class client
       : public std::enable_shared_from_this<client>
 {
-  public:    
+  public:
     /*! Defaults that allow total control to the database administrators. */
     static const object_access_parameters access_override_defaults;
     
@@ -39,7 +39,6 @@ class client
     const ::riak::bucket bucket (const key& k) const     { return const_cast<client*>(this)->bucket(k); }
     
   private:
-    const std::string client_id_;
     transport::delivery_provider deliver_request_;
     const object_access_parameters access_overrides_;
     const request_failure_parameters request_failure_defaults_;
@@ -48,9 +47,9 @@ class client
   protected:
     friend class bucket;
     friend class object;
-
+    
     void transmit_request(const std::string& r, message::buffering_handler& h, std::chrono::milliseconds timeout);
-
+    
     friend std::shared_ptr<client> make_client (
             transport::delivery_provider,
             boost::asio::io_service&,
