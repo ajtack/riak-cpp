@@ -1,3 +1,4 @@
+#include <gtest/gtest.h>
 #include <test/units/riak-client-mocked-for-two-requests.hxx>
 
 using namespace ::testing;
@@ -5,13 +6,26 @@ using namespace ::testing;
 //=============================================================================
 namespace riak {
     namespace test {
+    	namespace {
+//=============================================================================
+
+::riak::sibling no_sibling_resolution (const ::riak::siblings&)
+{
+	ADD_FAILURE() << "Sibling resolution was triggered, when it should not have been!";
+	::riak::sibling garbage;
+	garbage.set_value("Garbage!");
+	return garbage;
+}
+
+//=============================================================================
+		}   // namespace (anonymous)
 //=============================================================================
 
 using std::placeholders::_1;
 using std::placeholders::_2;
 
 riak_client_mocked_for_two_requests::riak_client_mocked_for_two_requests ()
-  : client(::riak::make_client(std::bind(&mock::transport::deliver, &transport, _1, _2), ios))
+  : client(::riak::make_client(std::bind(&mock::transport::deliver, &transport, _1, _2), &no_sibling_resolution, ios))
 {
 	InSequence s;
 	typedef mock::transport::option_to_terminate_request mock_close_option;

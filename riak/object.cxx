@@ -16,14 +16,14 @@ using std::placeholders::_2;
 using std::placeholders::_3;
 
 
-boost::shared_future<boost::optional<object::siblings>> object::fetch () const
+boost::shared_future<boost::optional<object::value>> object::fetch () const
 {
-    typedef boost::optional<object::siblings> optval;
+    typedef boost::optional<object::value> optval;
     std::shared_ptr<boost::promise<optval>> promise(new boost::promise<optval>());
     
     // Type inference should work here, but it doesn't derive correctly. Strange.
     using std::function;
-    function<void()> on_successful_fetch = std::bind(&fulfill_promise<optval>, promise, std::ref(cached_siblings_));
+    function<void()> on_successful_fetch = std::bind(&fulfill_promise<optval>, promise, std::ref(cached_value_));
     function<void(const std::exception&)> on_failed_fetch = std::bind(&fail_promise<optval>, promise, _1);
     message::handler handle_whole_response =
             std::bind(&object::on_fetch_response,
@@ -74,19 +74,25 @@ boost::shared_future<void> object::put (const object::value& c)
 
 void update_cache (
         const RpbGetResp& response,
-        boost::optional<object::siblings>& cached_siblings,
+        boost::optional<object::value>& cached_value,
         boost::optional<std::string>& cached_vector_clock,
         boost::mutex& mutex)
 {
     boost::unique_lock<boost::mutex> protect(mutex);
     if (not (response.has_unchanged() and response.unchanged())) {
-        if (response.has_vclock()) {
-            cached_siblings = response.content();
+        if (response.has_vclock())
             cached_vector_clock = response.vclock();
+        
+        if (response.content().size() == 1) {
+            cached_value = response.content().Get(0);
+            cached_vector_clock = response.vclock();
+        } else {
+            // We _must_ have performed sibling resolution by this point.
+            assert(response.content().size() == 0);
         }
     }
 }
-        
+     
 //=============================================================================
     }   // namespace (anonymous)
 //=============================================================================
@@ -128,7 +134,14 @@ bool object::on_fetch_response (
         
         RpbGetResp response;
         if (message::retrieve(response, request.size(), request)) {
-            update_cache(response, cached_siblings_, cached_vector_clock_, mutex_);
+            if (response.content().size() > 1) {
+                auto resolved_value = resolve_siblings_(response.content());
+                response.clear_content();
+                *response.add_content() = resolved_value;
+                // TODO: Push resolutions back to the cluster. How many times/until what time limit?
+            }
+            
+            update_cache(response, cached_value_, cached_vector_clock_, mutex_);
             cache_is_hot_ = true;
             proceed_with_next_step();
         } else {
@@ -195,8 +208,18 @@ bool object::on_put_response (
         RpbPutResp response;
         if (message::retrieve(response, bytes_received, input)) {
             boost::unique_lock<boost::mutex> protect(mutex_);
-            if (response.has_vclock()   )  cached_vector_clock_ = response.vclock();
-            if (response.content_size() > 0)  cached_siblings_ = response.content();
+            if (response.has_vclock())
+                cached_vector_clock_ = response.vclock();
+            
+            if (response.content_size() > 0) {
+                if (response.content_size() == 1)
+                    cached_value_ = response.content().Get(0);
+                else
+                    cached_value_ = resolve_siblings_(response.content());
+            } else {
+                cached_value_.reset();
+            }
+            
             p->set_value();
         } else {
             p->set_exception(boost::copy_exception(

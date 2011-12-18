@@ -17,21 +17,24 @@ const request_failure_parameters client::failure_defaults = request_failure_para
 
 std::shared_ptr<client> make_client (
         transport::delivery_provider d,
+        sibling_resolution sr,
         boost::asio::io_service& ios,
         const request_failure_parameters& failure_defaults,
         const object_access_parameters& access_override_defaults)
 {
-    std::shared_ptr<client> ptr(new client(d, ios, failure_defaults, access_override_defaults));
+    std::shared_ptr<client> ptr(new client(d, sr, ios, failure_defaults, access_override_defaults));
     return ptr;
 }
 
 
 client::client (
         transport::delivery_provider d,
+        sibling_resolution sr,
         boost::asio::io_service& ios,
         const request_failure_parameters& fp,
         const object_access_parameters& ao)
   : deliver_request_(d),
+    resolve_siblings_(sr),
     access_overrides_(ao),
     request_failure_defaults_(fp),
     ios_(ios)
@@ -41,7 +44,7 @@ client::client (
 bucket client::bucket (const key& k)
 {
     assert(this);
-    return bucket::bucket(shared_from_this(), k, request_failure_defaults_, access_overrides_);
+    return bucket::bucket(shared_from_this(), k, resolve_siblings_, request_failure_defaults_, access_overrides_);
 }
 
 

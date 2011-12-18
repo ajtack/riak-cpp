@@ -9,6 +9,8 @@
 using namespace boost;
 using namespace riak::test;
 
+::riak::sibling no_sibling_resolution (const ::riak::siblings&);
+
 void run(boost::asio::io_service& ios)
 {
     ios.run();
@@ -22,7 +24,7 @@ int main (int argc, const char* argv[])
     
     announce_with_pause("Connecting!");
     auto connection = riak::make_single_socket_transport("localhost", 8082, ios);
-    auto my_store = riak::make_client(connection, ios);
+    auto my_store = riak::make_client(connection, no_sibling_resolution, ios);
     
     announce_with_pause("Ready to fetch item test/doc");
     auto cached_object = my_store->bucket("test")["doc"];
@@ -32,10 +34,12 @@ int main (int argc, const char* argv[])
     result.wait();
     if (result.has_value()) {
         announce("Fetch appears successful.");
+        std::string stored_value = (argc > 1)? argv[1] : "oogaboogah";
         RpbContent c;
-        c.set_value("oogaboogah");
-        
-        announce_with_pause("Ready to store 'oogaboogah' to item test/doc");
+        c.set_value(stored_value);
+        c.set_content_type("text/plain");
+
+        announce_with_pause(str(format("Ready to store '%1%' to item test/doc") % stored_value));
         auto result = cached_object->put(c);
         
         announce("Waiting for operation to respond...");
@@ -68,4 +72,12 @@ int main (int argc, const char* argv[])
     work.reset();
     worker.join();
     return 0;
+}
+
+::riak::sibling no_sibling_resolution (const ::riak::siblings&)
+{
+    announce("Siblings being resolved!");
+    ::riak::sibling garbage;
+    garbage.set_value("<result of sibling resolution>");
+    return garbage;
 }

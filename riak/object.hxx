@@ -7,6 +7,7 @@
 #include <riak/object_access_parameters.hxx>
 #include <riak/riakclient.pb.h>
 #include <riak/request_failure_parameters.hxx>
+#include <riak/sibling_resolution.hxx>
 #include <string>
 
 //=============================================================================
@@ -40,26 +41,25 @@ class object
      *     receives a response.
      */
     boost::shared_future<void> put (const value& b);
-            
-    typedef value sibling;
-    typedef ::google::protobuf::RepeatedPtrField<sibling> siblings;
     
     /*!
      * Begins an asynchronous read of this value from the store. The retrieved value will not be
      * cached; the only memory of it will be given with the returned future.
      */
-    boost::shared_future<boost::optional<siblings>> fetch () const;
-    
+    boost::shared_future<boost::optional<value>> fetch () const;
+
   protected:
     friend class bucket;
     object (std::shared_ptr<client> c,
             const ::riak::key& bucket,
             const ::riak::key& k,
+            ::riak::sibling_resolution& sr,
             const request_failure_parameters& fp,
             const object_access_parameters& p)
       : client_(c),
         bucket_(bucket),
         key_(k),
+        resolve_siblings_(sr),
         default_request_failure_parameters_(fp),
         overridden_access_parameters_(p),
         cache_is_hot_(false)
@@ -69,12 +69,13 @@ class object
     std::shared_ptr<client> client_;
     const ::riak::key bucket_;
     const ::riak::key key_;
+    sibling_resolution resolve_siblings_;
     
     request_failure_parameters default_request_failure_parameters_;
     object_access_parameters overridden_access_parameters_;
     
     mutable boost::mutex mutex_;
-    mutable boost::optional<siblings> cached_siblings_;
+    mutable boost::optional<value> cached_value_;
     mutable boost::optional<std::string> cached_vector_clock_;
     mutable bool cache_is_hot_;
     

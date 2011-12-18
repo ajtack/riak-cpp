@@ -17,7 +17,7 @@ using std::placeholders::_3;
 object::reference bucket::operator[] (const ::riak::key& k)
 {
     return object::reference(
-            new object(client_, this->key(), k, default_request_failure_parameters_, overridden_access_parameters_));
+            new object(client_, this->key(), k, resolve_siblings_, default_request_failure_parameters_, overridden_access_parameters_));
 }
 
 //=============================================================================

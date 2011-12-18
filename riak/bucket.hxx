@@ -10,6 +10,7 @@
 #include <riak/object.hxx>
 #include <riak/object_access_parameters.hxx>
 #include <riak/request_failure_parameters.hxx>
+#include <riak/sibling_resolution.hxx>
 
 //=============================================================================
 namespace riak {
@@ -63,10 +64,12 @@ class bucket
      */
     bucket (std::shared_ptr<client> c,
             const ::riak::key& k,
+            sibling_resolution& sr,
             const request_failure_parameters& fp,
             const object_access_parameters& p)
       : client_(c),
         key_(k),
+        resolve_siblings_(sr),
         default_request_failure_parameters_(fp),
         overridden_access_parameters_(p)
     {   }
@@ -74,6 +77,7 @@ class bucket
   private:
     std::shared_ptr<client> client_;
     const ::riak::key key_;
+    sibling_resolution resolve_siblings_;
     request_failure_parameters default_request_failure_parameters_;
     object_access_parameters overridden_access_parameters_;
 };

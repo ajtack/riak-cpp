@@ -9,6 +9,8 @@
 using namespace boost;
 using namespace riak::test;
 
+::riak::sibling no_sibling_resolution (const ::riak::siblings&);
+
 void run(boost::asio::io_service& ios)
 {
     ios.run();
@@ -22,7 +24,7 @@ int main (int argc, const char* argv[])
     
     announce_with_pause("Connecting!");
     auto connection = riak::make_single_socket_transport("localhost", 8082, ios);
-    auto my_store = riak::make_client(connection, ios);
+    auto my_store = riak::make_client(connection, no_sibling_resolution, ios);
     
     announce_with_pause("Ready to fetch item test/doc");
     auto result = my_store->bucket("test")["doc"]->fetch();
@@ -34,7 +36,7 @@ int main (int argc, const char* argv[])
             announce("Fetch appears successful. Value was not found.");
         } else if (result.has_value()) {
             auto val = result.get();
-            announce(str(format("Fetch appears successful. Value is: %1%") % val->Get(0).value()));
+            announce(str(format("Fetch appears successful. Value is: %1%") % val->value()));
         } else {
             assert(result.has_exception());
             try {
@@ -54,4 +56,12 @@ int main (int argc, const char* argv[])
     work.reset();
     worker.join();
     return 0;
+}
+
+::riak::sibling no_sibling_resolution (const ::riak::siblings&)
+{
+    announce("Siblings being resolved!");
+    ::riak::sibling garbage;
+    garbage.set_value("<result of sibling resolution>");
+    return garbage;
 }
