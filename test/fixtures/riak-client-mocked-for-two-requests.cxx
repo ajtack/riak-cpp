@@ -1,5 +1,5 @@
 #include <gtest/gtest.h>
-#include <test/units/riak-client-mocked-for-two-requests.hxx>
+#include <test/fixtures/riak-client-mocked-for-two-requests.hxx>
 
 using namespace ::testing;
 

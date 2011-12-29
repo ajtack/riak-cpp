@@ -35,5 +35,5 @@ library = env.StaticLibrary('riak', [sources, riak_protocol], build_dir=library_
 # Unit tests are compiled and run every time the program is compiled.
 Export('env')
 Export('library')
-unit_tests = SConscript('test/units/SConscript', variant_dir='build/test/units')
+unit_tests = SConscript('test/SConscript', variant_dir='build/test/units')
 AddPostAction(unit_tests, unit_tests[0].path)

@@ -1,5 +1,5 @@
 #include <gtest/gtest.h>
-#include <test/units/riak-client-with-mocked-transport.hxx>
+#include <test/fixtures/riak-client-with-mocked-transport.hxx>
 
 using namespace ::testing;
 

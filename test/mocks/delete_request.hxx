@@ -11,7 +11,7 @@ namespace riak {
 class delete_request
 {
   public:
-    class result_handler
+    class response_handler
     {
       public:
         MOCK_METHOD3(execute, void(const std::error_code&, const ::riak::key&, const ::riak::key&));

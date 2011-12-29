@@ -6,67 +6,55 @@
  */
 #include <gtest/gtest.h>
 #include <riak/message.hxx>
-#include <test/mocks/delete_request.hxx>
-#include <test/units/riak-client-with-mocked-transport.hxx>
+#include <test/fixtures/deleting_client.hxx>
 #include <system_error>
 
 using namespace ::testing;
-using std::placeholders::_1;
-using std::placeholders::_2;
-using std::placeholders::_3;
+using riak::test::fixture::deleting_client;
 
 //=============================================================================
 namespace riak {
     namespace test {
 //=============================================================================
 
-TEST_F(riak_client_with_mocked_transport, client_survives_nonsense_reply_to_unmap)
+TEST_F(deleting_client, client_survives_nonsense_reply_to_unmap)
 {
-    // In summary: mock a result handling function so we can tell when it was called.
-    typedef mock::delete_request::result_handler result_handler_t;
-    auto result_handler_mock = std::make_shared<result_handler_t>();
-    auto result_handler = std::bind(&result_handler_t::execute, result_handler_mock, _1, _2, _3);
-
-    client->delete_object("a", "document", result_handler);
+    client->delete_object("a", "document", response_handler);
 
     // Expect no calls, as this particular garbage suggests a longer reply; the request
     // would eventually time out.
     EXPECT_CALL(closure_signal, exercise()).Times(0);
-    EXPECT_CALL(*result_handler_mock, execute(_, _, _)).Times(0);
+    EXPECT_CALL(response_handler_mock, execute(_, _, _)).Times(0);
     EXPECT_CALL(sibling_resolution, evaluate(_)).Times(0);
     std::string garbage("uhetnaoutaenosueosaueoas");
     request_handler(std::error_code(), garbage.size(), garbage);
 }
 
 
-TEST_F(riak_client_with_mocked_transport, client_survives_wrong_code_reply_to_unmap)
+TEST_F(deleting_client, client_survives_wrong_code_reply_to_unmap)
 {
-    // In summary: mock a result handling function so we can tell when it was called.
-    typedef mock::delete_request::result_handler result_handler_t;
-    auto result_handler_mock = std::make_shared<result_handler_t>();
-    auto result_handler = std::bind(&result_handler_t::execute, result_handler_mock, _1, _2, _3);
-    
-    client->delete_object("a", "document", result_handler);
-    
+    client->delete_object("a", "document", response_handler);
+
     EXPECT_CALL(closure_signal, exercise());
-    EXPECT_CALL(*result_handler_mock, execute(Eq(riak::make_server_error(riak::errc::response_was_nonsense)), Eq("a"), Eq("document")));
+    EXPECT_CALL(response_handler_mock, execute(
+            Eq(riak::make_server_error(riak::errc::response_was_nonsense)),
+            Eq("a"),
+            Eq("document")));
     EXPECT_CALL(sibling_resolution, evaluate(_)).Times(0);
     riak::message::wire_package bad_reply(riak::message::code::GetResponse, "whatever");
     request_handler(std::error_code(), bad_reply.to_string().size(), bad_reply.to_string());
 }
 
 
-TEST_F(riak_client_with_mocked_transport, client_survives_trailing_data_with_RpbDelResp)
+TEST_F(deleting_client, client_survives_trailing_data_with_RpbDelResp)
 {
-    // In summary: mock a result handling function so we can tell when it was called.
-    typedef mock::delete_request::result_handler result_handler_t;
-    auto result_handler_mock = std::make_shared<result_handler_t>();
-    auto result_handler = std::bind(&result_handler_t::execute, result_handler_mock, _1, _2, _3);
-
-    client->delete_object("a", "document", result_handler);
+    client->delete_object("a", "document", response_handler);
 
     EXPECT_CALL(closure_signal, exercise());
-    EXPECT_CALL(*result_handler_mock, execute(_, _, _));
+    EXPECT_CALL(response_handler_mock, execute(
+            Eq(riak::make_server_error(riak::errc::no_error)),
+            Eq("a"),
+            Eq("document")));
     EXPECT_CALL(sibling_resolution, evaluate(_)).Times(0);
     riak::message::wire_package long_reply(riak::message::code::DeleteResponse, "atnhueoauheas(garbage)");
     request_handler(std::error_code(), long_reply.to_string().size(), long_reply.to_string());
