@@ -44,13 +44,6 @@ client::client (
     ios_(ios)
 {   }
 
-
-bucket client::bucket (const key& k)
-{
-    assert(this);
-    return bucket::bucket(deliver_request_, k, resolve_siblings_, request_failure_defaults_, access_overrides_);
-}
-
 //=============================================================================
     namespace {
 //=============================================================================

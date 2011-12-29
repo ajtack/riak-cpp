@@ -1,5 +1,4 @@
 #include <memory>
-#include <riak/bucket.hxx>
 #include <riak/message.hxx>
 #include <riak/object_access_parameters.hxx>
 #include <riak/request_failure_parameters.hxx>
@@ -31,14 +30,6 @@ class client
     
     /*! Yields the object access defaults with which this client was instantiated. */
     const object_access_parameters& object_access_override_defaults () const;
-    
-    /*!
-     * Returns the value mapped by the given key. May return a value evaluating to "false", in which case
-     * there was no value at this key. The value returned is directly assignable, so store["foo"] = "bar"
-     * constitutes setting the value at "foo" to "bar", irrespective of any previous values present.
-     */
-          ::riak::bucket bucket (const key& k);
-    const ::riak::bucket bucket (const key& k) const     { return const_cast<client*>(this)->bucket(k); }
     
     // std::unique_ptr<get_request_in_flight>    get    (const key& bucket, const key& k) const;
     // std::unique_ptr<put_request_in_flight>    put    (const key& bucket, const key& k, const value& object);
