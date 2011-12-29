@@ -2,7 +2,6 @@
 #include <boost/asio/read.hpp>
 #include <boost/asio/write.hpp>
 #include <boost/lexical_cast.hpp>
-#include <riak/request.hxx>
 #include <riak/transports/single-serial-socket.hxx>
 #include <system_error>
 
@@ -33,24 +32,15 @@ class single_serial_socket
             boost::asio::io_service& ios);
     
     virtual ~single_serial_socket ();
-    
-    /*!
-     * Dispatches the given request at the next available opportunity. This function
-     * may optionally return immediately, constituting asynchronous behavior.
-     *
-     * \param r may optionally be maintained by the connection pool beyond this method call.
-     * \param h must always be called to indicate either failure or success, including upon
-     *     destruction of the connection pool prior to resolution of a request. Multiple calls
-     *     are permissible, and calls with empty payloads will affect timeouts.
-     */
+
     virtual transport::option_to_terminate_request deliver (
-            std::shared_ptr<const request> r,
+            const std::string& r,
             transport::response_handler h);
     
   private:
     class option_to_terminate_request;
     friend class option_to_terminate_request;
-    typedef std::pair<std::shared_ptr<const request>, transport::response_handler> enqueued_request;
+    typedef std::pair<const std::string, transport::response_handler> enqueued_request;
     
     boost::asio::ip::tcp::resolver::query target_;
     boost::asio::io_service& ios_;
@@ -163,7 +153,7 @@ single_serial_socket::~single_serial_socket ()
 
 
 transport::option_to_terminate_request single_serial_socket::deliver (
-        std::shared_ptr<const request> r,
+        const std::string& r,
         transport::response_handler h)
 {
     auto packed_request = std::make_shared<enqueued_request>(std::make_pair(r, h));
@@ -274,7 +264,7 @@ void single_serial_socket::run_next_request ()
     active_request_ = pending_requests_.front();
     pending_requests_.pop_front();
     auto on_write = std::bind(&single_serial_socket::on_write, this, active_request_, _1, _2);
-    asio::async_write(socket_, asio::buffer(active_request_->first->payload()), on_write);
+    asio::async_write(socket_, asio::buffer(active_request_->first), on_write);
 }
 
 

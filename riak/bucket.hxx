@@ -5,18 +5,16 @@
  * \author Andres Jaan Tack <ajtack@gmail.com>
  */
 #pragma once
-#include <boost/thread/future.hpp>
 #include <riak/core_types.hxx>
-#include <riak/object.hxx>
 #include <riak/object_access_parameters.hxx>
 #include <riak/request_failure_parameters.hxx>
+#include <riak/response_handlers.hxx>
 #include <riak/sibling_resolution.hxx>
+#include <riak/transport.hxx>
 
 //=============================================================================
 namespace riak {
 //=============================================================================
-
-class client;
 
 /*!
  * A remote collection of "objects" indexed by "key". Copying a particular instance does not modify
@@ -30,53 +28,32 @@ class client;
 class bucket
 {
   public:
-    /*!
-     * Generates a reference to an object (possibly as-yet nonexistent) mapped at the given key.
-     * With this reference, you can access and make changes to the store itself.
-     */
-          object::reference operator[] (const key& k);
-    const object::reference operator[] (const key& k) const { return const_cast<bucket&>(*this)[k]; }
-    
-    typedef std::function<void(std::error_code, bool)> deletion_result_handler;
-    
-    /*! Deletes any value mapped at the given key asynchronously, with results given as per the returned future. */
-    boost::unique_future<void> unmap (const key& k);
-    
-    /*!
-     * Deletes any value mapped at the given key asynchronously, with the result given to a callback.
-     * \param h assuming no error, will be called with the second parameter indicating whether an item was deleted or not.
-     */
-    void unmap (const key& k, const deletion_result_handler& h);
-    
-    // boost::shared_future<void> set_properties (const properties& p);
-    // boost::shared_future<std::pair<key, std::shared_ptr<properties>>> fetch_properties () const;
-    
-    const ::riak::key& key () const { return key_; }
+    /*! \return the key addressing this bucket. */
+    const ::riak::key& name () const { return name_; }
     
   protected:
     friend class client;
-    friend class object;
     
     /*!
-     * \param k is the key which indexed this particular bucket in the store.
+     * \param n is the key which indexed this particular bucket in the cluster.
      * \param p will be used for unmapping operations by default. It will also be given as cconfiguration
      *     overrides for any objects referenced through this bucket.
      */
-    bucket (std::shared_ptr<client> c,
-            const ::riak::key& k,
+    bucket (transport::delivery_provider& d,
+            const ::riak::key& n,
             sibling_resolution& sr,
             const request_failure_parameters& fp,
             const object_access_parameters& p)
-      : client_(c),
-        key_(k),
+      : deliver_request_(d),
+        name_(n),
         resolve_siblings_(sr),
         default_request_failure_parameters_(fp),
         overridden_access_parameters_(p)
     {   }
     
   private:
-    std::shared_ptr<client> client_;
-    const ::riak::key key_;
+    transport::delivery_provider deliver_request_;
+    const ::riak::key name_;
     sibling_resolution resolve_siblings_;
     request_failure_parameters default_request_failure_parameters_;
     object_access_parameters overridden_access_parameters_;

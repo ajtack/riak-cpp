@@ -30,7 +30,7 @@ void request_with_timeout::dispatch_via (transport::delivery_provider& deliver)
     // The request can only be sent once.
     assert(not terminate_request_ and not succeeded_ and not timed_out_);
     auto on_response = std::bind(&request_with_timeout::on_response, shared_from_this(), _1, _2, _3);
-    terminate_request_ = deliver(shared_from_this(), on_response);
+    terminate_request_ = deliver(request_data_, on_response);
     
     timeout_.expires_from_now(boost::posix_time::milliseconds(timeout_length_.count()));
     auto on_timeout = std::bind(&request_with_timeout::on_timeout, shared_from_this(), _1);

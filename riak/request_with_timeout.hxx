@@ -5,7 +5,6 @@
 #include <memory>
 #include <riak/message.hxx>
 #include <riak/transport.hxx>
-#include <riak/request.hxx>
 #include <system_error>
 
 namespace boost {
@@ -18,7 +17,6 @@ namespace riak {
 
 class request_with_timeout
       : public std::enable_shared_from_this<request_with_timeout>
-      , public riak::request
 {
   public:
     /*!
@@ -38,8 +36,6 @@ class request_with_timeout
      *     reset as soon as the request is dispatched.
      */
     void dispatch_via (transport::delivery_provider& p);
-    
-    virtual const std::string& payload () const { return request_data_; }
 
   private:
     void on_response (std::error_code, std::size_t, const std::string&);

@@ -1,4 +1,5 @@
 #pragma once
+#include <riak/riakclient.pb.h>
 
 //=============================================================================
 namespace riak {
@@ -12,7 +13,7 @@ typedef ::google::protobuf::RepeatedPtrField<sibling> siblings;
  * a value that can be considered a descendent of all of them. Such a value will most likely become
  * the only value in the system, overwriting all other siblings available.
  */
-typedef std::function<RpbContent(const siblings&)> sibling_resolution;
+typedef std::function<sibling(const siblings&)> sibling_resolution;
 
 //=============================================================================
 }   // namespace riak

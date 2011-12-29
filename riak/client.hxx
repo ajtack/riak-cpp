@@ -1,8 +1,9 @@
-#include <riak/bucket.hxx>
 #include <memory>
+#include <riak/bucket.hxx>
 #include <riak/message.hxx>
 #include <riak/object_access_parameters.hxx>
 #include <riak/request_failure_parameters.hxx>
+#include <riak/response_handlers.hxx>
 #include <riak/sibling_resolution.hxx>
 #include <riak/transport.hxx>
 
@@ -39,6 +40,10 @@ class client
           ::riak::bucket bucket (const key& k);
     const ::riak::bucket bucket (const key& k) const     { return const_cast<client*>(this)->bucket(k); }
     
+    // std::unique_ptr<get_request_in_flight>    get    (const key& bucket, const key& k) const;
+    // std::unique_ptr<put_request_in_flight>    put    (const key& bucket, const key& k, const value& object);
+    void delete_object (const key& bucket, const key& k, delete_response_handler h);
+
   private:
     transport::delivery_provider deliver_request_;
     sibling_resolution resolve_siblings_;
@@ -50,8 +55,6 @@ class client
     friend class bucket;
     friend class object;
     
-    void transmit_request(const std::string& r, message::buffering_handler& h, std::chrono::milliseconds timeout);
-    
     friend std::shared_ptr<client> make_client (
             transport::delivery_provider,
             sibling_resolution sr,
@@ -59,7 +62,7 @@ class client
             const request_failure_parameters&,
             const object_access_parameters&);
     
-    client (transport::delivery_provider d,
+    client (transport::delivery_provider& d,
             sibling_resolution sr,
             boost::asio::io_service& ios,
             const request_failure_parameters& = failure_defaults,

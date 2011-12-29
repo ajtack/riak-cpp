@@ -1,7 +1,5 @@
 #pragma once
-#include <memory>
-
-namespace riak { class request; }
+#include <functional>
 
 //=============================================================================
 namespace riak {
@@ -29,22 +27,14 @@ typedef std::function<void(std::error_code, std::size_t, const std::string&)> re
  * Dispatches the given request at the next available opportunity. This function
  * may optionally return immediately, constituting asynchronous behavior.
  *
- * \param r may optionally be maintained by the connection pool beyond this method call.
+ * \param r is an opaque binary blob to be transmitted to the server.
  * \param h must always be called to indicate either failure or success, including upon
  *     destruction of the connection pool prior to resolution of a request. Multiple calls
  *     are permissible, and calls with empty payloads will affect timeouts. A conforming
  *     implementation will deliver std::network_reset in case the transport is destroyed
  *     before the request can be satisfied.
  */
-typedef std::function<option_to_terminate_request(std::shared_ptr<const request>, response_handler)> delivery_provider;
-
-/*!
- * Used by the Riak client to address a transport provider using a consistent client ID
- * across all requests. The transport provider is responsible for tracking which connections
- * correspond with which client ID, and similarly with building a new connection for every
- * request delivery with an old client ID.
- */
-typedef std::function<delivery_provider(const std::string&)> client_registrar;
+typedef std::function<option_to_terminate_request(const std::string&, response_handler)> delivery_provider;
 
 //=============================================================================
     }   // namespace transport
