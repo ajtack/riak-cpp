@@ -25,6 +25,9 @@ class server_error_category
 	}   // namespace (anonymous)
 //=============================================================================
 
+const errc errc::no_error(0);
+const errc errc::response_was_nonsense(1);
+
 std::error_code make_server_error(const errc code)
 {
 	return std::error_code(static_cast<int>(code), server_error());

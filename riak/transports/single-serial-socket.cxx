@@ -6,8 +6,6 @@
 #include <system_error>
 
 namespace asio = boost::asio;
-using std::placeholders::_1;
-using std::placeholders::_2;
 
 //=============================================================================
 namespace riak {
@@ -77,10 +75,10 @@ class single_serial_socket::option_to_terminate_request
     
     option_to_terminate_request (
             single_serial_socket& p,
-            std::shared_ptr<single_serial_socket::enqueued_request>&& r,
+            std::shared_ptr<single_serial_socket::enqueued_request>& r,
             const single_serial_socket::request_queue::iterator pos)
       : pool_(p)
-      , this_request_(std::move(r))
+      , this_request_(r)
       , queue_position_(pos)
       , exercised_(false)
     {   }
@@ -101,6 +99,9 @@ class single_serial_socket::option_to_terminate_request
 //=============================================================================
     }   // namespace (anonymous)
 //=============================================================================
+
+using std::placeholders::_1;
+using std::placeholders::_2;
 
 transport::delivery_provider make_single_socket_transport (
         const std::string& address,
@@ -198,7 +199,11 @@ void single_serial_socket::on_read (
             // the lack of serialization here.
             auto handler = active_request_->second;
             serialize.unlock();
+#if _MSC_VER == 1600
+            auto error_code = std::make_error_code(static_cast<std::errc::errc>(error.value()));
+#else
             auto error_code = std::make_error_code(static_cast<std::errc>(error.value()));
+#endif
             handler(error_code, n_read, reader.str());
         } else {
             handle_socket_error(error);
@@ -253,7 +258,11 @@ void single_serial_socket::handle_socket_error (const boost::system::error_code&
         // An actual error occurred, and we need to give the riak::store a chance to release us.
         //
         auto handler = active_request_->second;
+#if _MSC_VER == 1600
+        auto error_code = std::make_error_code(static_cast<std::errc::errc>(error.value()));
+#else
         auto error_code = std::make_error_code(static_cast<std::errc>(error.value()));
+#endif
         handler(error_code, 0, "");
     }
 }

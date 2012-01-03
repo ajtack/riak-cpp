@@ -1,11 +1,17 @@
 #include <boost/asio/deadline_timer.hpp>
 #include <boost/thread/mutex.hpp>
 #include <boost/optional.hpp>
-#include <chrono>
 #include <memory>
 #include <riak/message.hxx>
 #include <riak/transport.hxx>
 #include <system_error>
+
+#ifdef _WIN32
+#include <boost/chrono.hpp>
+namespace std { namespace chrono = boost::chrono; }
+#else
+#include <chrono>
+#endif
 
 namespace boost {
     namespace asio { class io_service; }

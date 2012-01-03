@@ -2,6 +2,10 @@
 #include <sstream>
 #include <system_error>
 
+#ifdef _WIN32
+#include <WinSock2.h>
+#endif
+
 //=============================================================================
 namespace riak {
     namespace message {
@@ -29,7 +33,7 @@ iterator next_partial_response (const iterator begin, const iterator end)
         uint32_t encoded_length = *reinterpret_cast<const uint32_t*>(&*begin);
         uint32_t data_length = ntohl(encoded_length);
 
-        bool complete_response_available = (end - (begin + sizeof(encoded_length)) >= data_length);
+        bool complete_response_available = (end - begin - sizeof(encoded_length) >= data_length);
         if (complete_response_available) {
             iterator new_beginning = begin + sizeof(encoded_length) + data_length;
             return new_beginning;

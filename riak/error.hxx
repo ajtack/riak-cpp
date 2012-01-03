@@ -1,13 +1,34 @@
 #pragma once
 #include <system_error>
+#include <cstdint>
 
 //=============================================================================
 namespace riak {
 //=============================================================================
 
-enum class errc {
-	no_error = 0,
-	response_was_nonsense = 1,
+struct errc {
+    static const errc no_error;
+    static const errc response_was_nonsense;
+    
+    operator std::uint8_t () const { assert(valid_); return value_; }
+    
+    errc ()
+      : valid_(false)
+    {   }
+    
+    errc& operator= (uint8_t val) {
+        value_ = val;
+        valid_ = true;
+    }
+    
+    explicit errc (uint8_t v)
+      : value_(v),
+        valid_(true)
+    {   }
+    
+  private:
+    uint8_t value_;
+    bool valid_;
 };
 
 const std::error_category& server_error ();
