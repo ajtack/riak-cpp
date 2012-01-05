@@ -29,7 +29,7 @@ TEST_F(getting_client, client_survives_long_nonsense_reply_to_get)
     EXPECT_CALL(response_handler_mock, execute(_, _, _)).Times(0);
     EXPECT_CALL(sibling_resolution, evaluate(_)).Times(0);
     std::string garbage("uhetnaoutaenosueosaueoas");
-    request_handler(std::error_code(), garbage.size(), garbage);
+    data_handler(std::error_code(), garbage.size(), garbage);
 }
 
 
@@ -48,7 +48,7 @@ TEST_F(getting_client, client_survives_extra_data_in_empty_get_response)
             Eq(std::shared_ptr<riak::object>()),
             _));
     EXPECT_CALL(sibling_resolution, evaluate(_)).Times(0);
-    request_handler(std::error_code(), long_reply.size(), long_reply);
+    data_handler(std::error_code(), long_reply.size(), long_reply);
 }
 
 
@@ -69,7 +69,7 @@ TEST_F(getting_client, client_accepts_nonempty_get_response)
             Pointee(Property(&riak::object::value, StrEq(nonempty_get_response.content(0).value()))),
             _));
     EXPECT_CALL(sibling_resolution, evaluate(_)).Times(0);
-    request_handler(std::error_code(), nonempty_reply.to_string().size(), nonempty_reply.to_string());
+    data_handler(std::error_code(), nonempty_reply.to_string().size(), nonempty_reply.to_string());
 }
 
 
@@ -86,7 +86,7 @@ TEST_F(getting_client, client_accepts_empty_RbpGetResp)
     std::string response_data;
     empty_get_response.SerializeToString(&response_data);
     riak::message::wire_package clean_reply(riak::message::code::GetResponse, response_data);
-    request_handler(std::error_code(), clean_reply.to_string().size(), clean_reply.to_string());
+    data_handler(std::error_code(), clean_reply.to_string().size(), clean_reply.to_string());
 }
 
 
@@ -108,7 +108,7 @@ TEST_F(getting_client, client_accepts_well_formed_response_in_parts)
     // The first half should be correctly buffered.
     EXPECT_CALL(closure_signal, exercise()).Times(0);
     EXPECT_CALL(response_handler_mock, execute(_, _, _)).Times(0);
-    request_handler(std::error_code(), first_half.size(), first_half);
+    data_handler(std::error_code(), first_half.size(), first_half);
 
     // The second half should trigger a response callback.
     EXPECT_CALL(closure_signal, exercise());
@@ -116,7 +116,7 @@ TEST_F(getting_client, client_accepts_well_formed_response_in_parts)
             Eq(riak::make_server_error(riak::errc::no_error)),
             Pointee(Property(&riak::object::value, StrEq(nonempty_get_response.content(0).value()))),
             _));
-    request_handler(std::error_code(), second_half.size(), second_half);
+    data_handler(std::error_code(), second_half.size(), second_half);
 }
 
 //=============================================================================

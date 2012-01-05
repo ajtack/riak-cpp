@@ -27,7 +27,7 @@ riak_client_with_mocked_transport::riak_client_with_mocked_transport ()
 {
 	typedef mock::transport::option_to_terminate_request mock_close_option;
     EXPECT_CALL(transport, deliver(_, _))
-            .WillOnce(DoAll(SaveArg<1>(&request_handler), Return(std::bind(&mock_close_option::exercise, &closure_signal))));
+            .WillOnce(DoAll(SaveArg<1>(&data_handler), Return(std::bind(&mock_close_option::exercise, &closure_signal))));
 }
 
 

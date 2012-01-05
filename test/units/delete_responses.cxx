@@ -27,7 +27,7 @@ TEST_F(deleting_client, client_survives_nonsense_reply_to_unmap)
     EXPECT_CALL(response_handler_mock, execute(_, _, _)).Times(0);
     EXPECT_CALL(sibling_resolution, evaluate(_)).Times(0);
     std::string garbage("uhetnaoutaenosueosaueoas");
-    request_handler(std::error_code(), garbage.size(), garbage);
+    data_handler(std::error_code(), garbage.size(), garbage);
 }
 
 
@@ -42,7 +42,7 @@ TEST_F(deleting_client, client_survives_wrong_code_reply_to_unmap)
             Eq("document")));
     EXPECT_CALL(sibling_resolution, evaluate(_)).Times(0);
     riak::message::wire_package bad_reply(riak::message::code::GetResponse, "whatever");
-    request_handler(std::error_code(), bad_reply.to_string().size(), bad_reply.to_string());
+    data_handler(std::error_code(), bad_reply.to_string().size(), bad_reply.to_string());
 }
 
 
@@ -57,7 +57,7 @@ TEST_F(deleting_client, client_survives_trailing_data_with_RpbDelResp)
             Eq("document")));
     EXPECT_CALL(sibling_resolution, evaluate(_)).Times(0);
     riak::message::wire_package long_reply(riak::message::code::DeleteResponse, "atnhueoauheas(garbage)");
-    request_handler(std::error_code(), long_reply.to_string().size(), long_reply.to_string());
+    data_handler(std::error_code(), long_reply.to_string().size(), long_reply.to_string());
 }
 
 
@@ -72,7 +72,7 @@ TEST_F(deleting_client, client_accepts_well_formed_RbpDelResp)
             Eq("document")));
     EXPECT_CALL(sibling_resolution, evaluate(_)).Times(0);
     riak::message::wire_package clean_reply(riak::message::code::DeleteResponse, "");
-    request_handler(std::error_code(), clean_reply.to_string().size(), clean_reply.to_string());
+    data_handler(std::error_code(), clean_reply.to_string().size(), clean_reply.to_string());
 
 }
 
@@ -96,7 +96,7 @@ TEST_F(deleting_client, client_accepts_well_formed_unmap_response_in_parts)
             Eq(riak::make_server_error(riak::errc::no_error)),
             Eq("a"),
             Eq("document"))).Times(0);
-    request_handler(std::error_code(), first_half.size(), first_half);
+    data_handler(std::error_code(), first_half.size(), first_half);
 
     // The second half should trigger a response callback.
     EXPECT_CALL(closure_signal, exercise());
@@ -104,7 +104,7 @@ TEST_F(deleting_client, client_accepts_well_formed_unmap_response_in_parts)
             Eq(riak::make_server_error(riak::errc::no_error)),
             Eq("a"),
             Eq("document")));
-    request_handler(std::error_code(), second_half.size(), second_half);
+    data_handler(std::error_code(), second_half.size(), second_half);
 }
 
 //=============================================================================
