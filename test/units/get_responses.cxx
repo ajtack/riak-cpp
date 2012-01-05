@@ -33,10 +33,31 @@ TEST_F(getting_client, client_survives_long_nonsense_reply_to_get)
 }
 
 
+TEST_F(getting_client, client_survives_wrong_code_reply_to_get)
+{
+    client->get_object("a", "document", response_handler);
+
+    RpbGetResp nonempty_get_response;
+    nonempty_get_response.add_content()->set_value("Son of a gun!");
+    nonempty_get_response.set_vclock("whatever");
+    std::string raw_response;
+    nonempty_get_response.SerializeToString(&raw_response);
+    riak::message::wire_package bad_reply(riak::message::code::PutResponse, raw_response);
+
+    EXPECT_CALL(closure_signal, exercise());
+    EXPECT_CALL(response_handler_mock, execute(
+            Eq(riak::make_server_error(riak::errc::response_was_nonsense)),
+            IsNull(),
+            _));
+    EXPECT_CALL(sibling_resolution, evaluate(_)).Times(0);
+    data_handler(std::error_code(), bad_reply.to_string().size(), bad_reply.to_string());
+}
+
+
 TEST_F(getting_client, client_survives_extra_data_in_empty_get_response)
 {
     client->get_object("a", "document", response_handler);
-    
+
     std::string response_with_extra;
     empty_get_response.SerializeToString(&response_with_extra);
     riak::message::wire_package correct_reply(riak::message::code::GetResponse, response_with_extra);
@@ -55,7 +76,7 @@ TEST_F(getting_client, client_survives_extra_data_in_empty_get_response)
 TEST_F(getting_client, client_accepts_nonempty_get_response)
 {
     client->get_object("a", "document", response_handler);
-    
+
     RpbGetResp nonempty_get_response;
     nonempty_get_response.add_content()->set_value("Son of a gun!");
     nonempty_get_response.set_vclock("whatever");
