@@ -31,8 +31,8 @@ class client
     /*! Yields the object access defaults with which this client was instantiated. */
     const object_access_parameters& object_access_override_defaults () const;
     
-    // std::unique_ptr<get_request_in_flight>    get    (const key& bucket, const key& k) const;
-    // std::unique_ptr<put_request_in_flight>    put    (const key& bucket, const key& k, const value& object);
+    void get_object (const key& bucket, const key& k, get_response_handler);
+    // void put_object (const key& bucket, const key& k, put_response_handler);
     void delete_object (const key& bucket, const key& k, delete_response_handler h);
 
   private:
@@ -41,11 +41,8 @@ class client
     const object_access_parameters access_overrides_;
     const request_failure_parameters request_failure_defaults_;
     boost::asio::io_service& ios_;
-    
+
   protected:
-    friend class bucket;
-    friend class object;
-    
     friend std::shared_ptr<client> make_client (
             transport::delivery_provider,
             sibling_resolution sr,

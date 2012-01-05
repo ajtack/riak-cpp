@@ -9,12 +9,10 @@ namespace riak {
     	namespace {
 //=============================================================================
 
-::riak::sibling no_sibling_resolution (const ::riak::siblings&)
+size_t no_sibling_resolution (const ::riak::siblings&)
 {
 	ADD_FAILURE() << "Sibling resolution was triggered, when it should not have been!";
-	::riak::sibling garbage;
-	garbage.set_value("Garbage!");
-	return garbage;
+	return 0;
 }
 
 //=============================================================================
