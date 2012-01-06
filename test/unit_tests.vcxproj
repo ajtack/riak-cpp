@@ -132,16 +132,20 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="fixtures\deleting_client.cxx" />
+    <ClCompile Include="fixtures\getting_client.cxx" />
     <ClCompile Include="fixtures\riak-client-mocked-for-two-requests.cxx" />
     <ClCompile Include="fixtures\riak-client-with-mocked-transport.cxx" />
     <ClCompile Include="units\delete_responses.cxx" />
+    <ClCompile Include="units\get_responses.cxx" />
     <ClCompile Include="units\main.cxx" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="fixtures\deleting_client.hxx" />
+    <ClInclude Include="fixtures\getting_client.hxx" />
     <ClInclude Include="fixtures\riak-client-mocked-for-two-requests.hxx" />
     <ClInclude Include="fixtures\riak-client-with-mocked-transport.hxx" />
     <ClInclude Include="mocks\delete_request.hxx" />
+    <ClInclude Include="mocks\get_request.hxx" />
     <ClInclude Include="mocks\sibling_resolution.hxx" />
     <ClInclude Include="mocks\transport.hxx" />
     <ClInclude Include="tools\use-case-control.hxx" />
