@@ -111,12 +111,15 @@ void client::delete_object (const key& bucket, const key& k, delete_response_han
 bool resolve_siblings_on_fetch (
         const key& bucket,
         const key& k,
-        sibling_resolution& resolve_siblings,
-        transport::delivery_provider& deliver_request,
-        get_response_handler respond_to_application,
-        const std::error_code& error,
-        std::size_t bytes_received,
-        const std::string& data);
+        sibling_resolution&,
+        const object_access_parameters&,
+        const request_failure_parameters&,
+        transport::delivery_provider&,
+        boost::asio::io_service&,
+        get_response_handler,
+        const std::error_code&,
+        std::size_t,
+        const std::string&);
 
 //=============================================================================
     }   // namespace (anonymous)
@@ -142,7 +145,15 @@ void client::get_object (const key& bucket, const key& k, get_response_handler h
     auto query = message::encode(request);
     
     message::handler handle_whole_response =
-            std::bind(&resolve_siblings_on_fetch, bucket, k, resolve_siblings_, deliver_request_, handle_get_result, _1, _2, _3);
+            std::bind(&resolve_siblings_on_fetch,
+                    bucket, k,
+                    resolve_siblings_,
+                    access_overrides_,
+                    request_failure_defaults_,
+                    deliver_request_,
+                    std::ref(ios_),
+                    handle_get_result,
+                    _1 /* error */, _2 /* data size */, _3 /* data */);
     auto handle_buffered_response = message::make_buffering_handler(handle_whole_response);
     auto wire_request = std::make_shared<request_with_timeout>(
             query.to_string(),
@@ -178,9 +189,12 @@ void retry_or_return_cached_value (
 void put_cold (
         const key& bucket,
         const key& k,
-        const std::shared_ptr<object>&,
-        put_response_handler&,
-        transport::delivery_provider&);
+        const std::shared_ptr<object>& content,
+        const object_access_parameters& overridden,
+        const request_failure_parameters& request_failure_defaults,
+        put_response_handler& respond_to_application,
+        transport::delivery_provider& deliver_request,
+        boost::asio::io_service& ios);
 
 void put_resolved_sibling (
         const key& bucket,
@@ -232,7 +246,10 @@ bool resolve_siblings_on_fetch (
         const key& bucket,
         const key& k,
         sibling_resolution& resolve_siblings,
+        const object_access_parameters& access_overrides,
+        const request_failure_parameters& request_failure_defaults,
         transport::delivery_provider& deliver_request,
+        boost::asio::io_service& ios,
         get_response_handler respond_to_application,
         const std::error_code& error,
         std::size_t bytes_received,
@@ -282,7 +299,13 @@ bool resolve_siblings_on_fetch (
                     tell_application_reply_was_nonsense(no_content);
                 }
             } else {
-                value_updater add_content = std::bind(&put_cold, bucket, k, _1, _2, deliver_request);
+                value_updater add_content =
+                        std::bind(&put_cold,
+                                bucket, k, _1 /* object */,
+                                access_overrides,
+                                request_failure_defaults,
+                                _2 /* application response handler */,
+                                deliver_request, std::ref(ios));
                 respond_to_application(riak::make_server_error(), no_content, add_content);
             }
         } else {
@@ -297,14 +320,47 @@ bool resolve_siblings_on_fetch (
 }
 
 
+bool parse_put_response (
+        put_response_handler,
+        const std::error_code&,
+        std::size_t,
+        const std::string&);
+
+
 void put_cold (
         const key& bucket,
         const key& k,
-        const std::shared_ptr<object>&,
-        put_response_handler&,
-        transport::delivery_provider&)
+        const std::shared_ptr<object>& content,
+        const object_access_parameters& overridden,
+        const request_failure_parameters& request_failure_defaults,
+        put_response_handler& respond_to_application,
+        transport::delivery_provider& deliver_request,
+        boost::asio::io_service& ios)
 {
-    assert(false);
+    RpbPutReq request;
+    request.set_bucket(bucket);
+    request.set_key(k);
+    request.mutable_content()->CopyFrom(*content);
+    if (overridden.w )  request.set_w (*overridden.w );
+    if (overridden.dw)  request.set_dw(*overridden.dw);
+    if (overridden.pw)  request.set_pw(*overridden.pw);
+    
+    // TODO: How do we control these options without being corny?
+    request.set_return_body(false);
+    request.set_if_not_modified(false);
+    request.set_if_none_match(false);
+    request.set_return_head(false);
+    
+    auto query = message::encode(request);
+    message::handler handle_whole_put_response = std::bind(&parse_put_response, respond_to_application, _1, _2, _3);
+    auto handle_buffered_put_response = message::make_buffering_handler(handle_whole_put_response);
+    auto wire_request = std::make_shared<request_with_timeout>(
+            query.to_string(),
+            request_failure_defaults.response_timeout,
+            handle_buffered_put_response,
+            ios);
+    
+    wire_request->dispatch_via(deliver_request);
 }
 
 
@@ -344,6 +400,31 @@ void retry_or_return_cached_value (
         )
 {
     assert(false);
+}
+
+
+bool parse_put_response (
+        put_response_handler respond_to_application,
+        const std::error_code& error,
+        std::size_t bytes_received,
+        const std::string& data)
+{
+    if (not error) {
+        assert(bytes_received != 0);
+        assert(bytes_received == data.size());
+        
+        RpbPutResp response;
+        if (message::retrieve(response, data.size(), data)) {
+            respond_to_application(riak::make_server_error());
+        } else {
+            respond_to_application(riak::make_server_error(riak::errc::response_was_nonsense));
+        }
+    } else {
+        respond_to_application(error);
+    }
+
+    // Always terminate the request, whether success or failure.
+    return true;
 }
 
 //=============================================================================
