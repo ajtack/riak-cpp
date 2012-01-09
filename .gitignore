@@ -2,3 +2,12 @@
 *.sconsign.dblite
 build
 libriak.a
+riak/riakclient.pb.cc
+riak/riakclient.pb.h
+*.obj
+*.suo
+*.sdf
+*.opensdf
+*x64
+ipch
+*.vcxproj.user

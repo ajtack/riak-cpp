@@ -1,11 +1,17 @@
 #include <boost/asio/deadline_timer.hpp>
 #include <boost/thread/mutex.hpp>
-#include <chrono>
+#include <boost/optional.hpp>
 #include <memory>
 #include <riak/message.hxx>
 #include <riak/transport.hxx>
-#include <riak/request.hxx>
 #include <system_error>
+
+#ifdef _WIN32
+#include <boost/chrono.hpp>
+namespace std { namespace chrono = boost::chrono; }
+#else
+#include <chrono>
+#endif
 
 namespace boost {
     namespace asio { class io_service; }
@@ -17,7 +23,6 @@ namespace riak {
 
 class request_with_timeout
       : public std::enable_shared_from_this<request_with_timeout>
-      , public riak::request
 {
   public:
     /*!
@@ -36,9 +41,7 @@ class request_with_timeout
      * \pre There must exist a shared pointer to this request at the time of dispatch. It may be
      *     reset as soon as the request is dispatched.
      */
-    void dispatch_via (transport& p);
-    
-    virtual const std::string& payload () const { return request_data_; }
+    void dispatch_via (transport::delivery_provider& p);
 
   private:
     void on_response (std::error_code, std::size_t, const std::string&);
@@ -48,7 +51,7 @@ class request_with_timeout
     std::chrono::milliseconds timeout_length_;
     boost::asio::deadline_timer timeout_;
     message::buffering_handler response_callback_;
-    std::shared_ptr<transport::option_to_terminate_request> option_to_terminate_request_;
+    boost::optional<transport::option_to_terminate_request> terminate_request_;
     const std::string request_data_;
     
     bool succeeded_;

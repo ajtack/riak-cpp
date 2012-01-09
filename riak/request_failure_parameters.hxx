@@ -1,6 +1,12 @@
 #pragma once
-#include <chrono>
 #include <cstdint>
+
+#ifdef _WIN32
+#include <boost/chrono.hpp>
+namespace std { namespace chrono = boost::chrono; }
+#else
+#include <chrono>
+#endif
 
 //=============================================================================
 namespace riak {

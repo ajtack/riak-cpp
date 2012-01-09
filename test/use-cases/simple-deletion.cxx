@@ -9,6 +9,8 @@
 using namespace boost;
 using namespace riak::test;
 
+::riak::sibling no_sibling_resolution (const ::riak::siblings&);
+
 void run(boost::asio::io_service& ios)
 {
     ios.run();
@@ -21,8 +23,8 @@ int main (int argc, const char* argv[])
     boost::thread worker(std::bind(&run, std::ref(ios)));
     
     announce_with_pause("Connecting!");
-    riak::single_serial_socket connection("localhost", 8082, ios);
-    auto my_store = riak::make_client(connection, ios);
+    auto connection = riak::make_single_socket_transport("localhost", 8082, ios);
+    auto my_store = riak::make_client(connection, no_sibling_resolution, ios);
     
     announce_with_pause("Ready to delete item test/doc");
     auto result = my_store->bucket("test").unmap("doc");
@@ -51,4 +53,12 @@ int main (int argc, const char* argv[])
     work.reset();
     worker.join();
     return 0;
+}
+
+::riak::sibling no_sibling_resolution (const ::riak::siblings&)
+{
+    announce("Siblings being resolved!");
+    ::riak::sibling garbage;
+    garbage.set_value("<result of sibling resolution>");
+    return garbage;
 }

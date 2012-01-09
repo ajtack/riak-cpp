@@ -1,5 +1,5 @@
 #include <iostream>
-#include <tools/use-case-control.hxx>
+#include <test/tools/use-case-control.hxx>
 
 //=============================================================================
 namespace riak {
@@ -15,7 +15,6 @@ void announce (const std::string& message)
 void announce_with_pause (const std::string& message)
 {
     std::cerr << message << std::endl;
-    char c;
     std::cerr << " -> (Press enter to continue…)";
     std::getchar();
     std::cerr << std::endl;

@@ -2,17 +2,116 @@
 #include <boost/asio/read.hpp>
 #include <boost/asio/write.hpp>
 #include <boost/lexical_cast.hpp>
-#include <riak/request.hxx>
 #include <riak/transports/single-serial-socket.hxx>
 #include <system_error>
 
 namespace asio = boost::asio;
-using std::placeholders::_1;
-using std::placeholders::_2;
 
 //=============================================================================
 namespace riak {
+    namespace {
 //=============================================================================
+
+class single_serial_socket
+      : public std::enable_shared_from_this<single_serial_socket>
+{
+  public:
+    /*!
+     * \param node_address should provide the location of a Riak node at which requests may be made.
+     *     Will be resolved via DNS.
+     * \param port identifies the port at which the service is accessed.
+     * \param ios must survive through the destruction of this transport.
+     * \post A connection to node_address is made eagerly at the given location. The transport is ready
+     *     to deliver requests.
+     */
+    single_serial_socket (
+            const std::string& node_address,
+            uint16_t port,
+            boost::asio::io_service& ios);
+    
+    virtual ~single_serial_socket ();
+
+    virtual transport::option_to_terminate_request deliver (
+            const std::string& r,
+            transport::response_handler h);
+    
+  private:
+    class option_to_terminate_request;
+    friend class option_to_terminate_request;
+    typedef std::pair<const std::string, transport::response_handler> enqueued_request;
+    
+    boost::asio::ip::tcp::resolver::query target_;
+    boost::asio::io_service& ios_;
+    
+    mutable boost::mutex mutex_;
+    boost::asio::ip::tcp::socket socket_;
+    boost::asio::streambuf read_buffer_;
+    std::shared_ptr<enqueued_request> active_request_;
+    boost::condition_variable active_request_finished_;
+    
+    typedef std::list<std::shared_ptr<enqueued_request>> request_queue;
+    request_queue pending_requests_;
+    boost::condition_variable request_dequeued_;
+    
+    bool shutting_down_;
+    
+    void on_read (std::shared_ptr<enqueued_request>, const boost::system::error_code&, size_t);
+    void on_write (std::shared_ptr<enqueued_request>, const boost::system::error_code&, size_t);
+    void run_next_request ();
+    void handle_socket_error (const boost::system::error_code&);
+    void connect_socket ();
+    transport::option_to_terminate_request enqueue (enqueued_request&, const request_queue::iterator&);
+};
+
+class single_serial_socket::option_to_terminate_request
+      : public std::enable_shared_from_this<single_serial_socket::option_to_terminate_request>
+{
+  public:
+    virtual ~option_to_terminate_request () {
+        exercise();
+    }
+    
+    virtual void exercise ();
+    
+    option_to_terminate_request (
+            single_serial_socket& p,
+            std::shared_ptr<single_serial_socket::enqueued_request>& r,
+            const single_serial_socket::request_queue::iterator pos)
+      : pool_(p)
+      , this_request_(r)
+      , queue_position_(pos)
+      , exercised_(false)
+    {   }
+    
+  private:
+    // The option cannot be serialized with the single_serial_socket's mutex, because a
+    // response handler will invoke this with that locked. Instead, we rely on
+    // pool_.socket working asynchronously.
+    boost::mutex mutex_;
+    single_serial_socket& pool_;
+    std::shared_ptr<single_serial_socket::enqueued_request> this_request_;
+    const single_serial_socket::request_queue::iterator queue_position_;
+    bool exercised_;
+    
+    void dequeue_thread_safely ();
+};
+
+//=============================================================================
+    }   // namespace (anonymous)
+//=============================================================================
+
+using std::placeholders::_1;
+using std::placeholders::_2;
+
+transport::delivery_provider make_single_socket_transport (
+        const std::string& address,
+        uint16_t port,
+        boost::asio::io_service& ios)
+{
+    auto transport = std::make_shared<single_serial_socket>(address, port, ios);
+    return std::bind(&single_serial_socket::deliver, transport, _1, _2);
+}
+
 
 single_serial_socket::single_serial_socket (
         const std::string& node_address,
@@ -54,19 +153,20 @@ single_serial_socket::~single_serial_socket ()
 }
 
 
-std::shared_ptr<transport::option_to_terminate_request> single_serial_socket::deliver (
-        std::shared_ptr<const request> r,
-        response_handler h)
+transport::option_to_terminate_request single_serial_socket::deliver (
+        const std::string& r,
+        transport::response_handler h)
 {
+    auto packed_request = std::make_shared<enqueued_request>(std::make_pair(r, h));
     boost::unique_lock<boost::mutex> serialize(mutex_);
     if (not shutting_down_) {
-        auto request_enqueued = std::make_shared<enqueued_request>(std::make_pair(r, h));
-        auto queue_position = pending_requests_.insert(pending_requests_.end(), request_enqueued);
+        auto queue_position = pending_requests_.insert(pending_requests_.end(), packed_request);
         if (not active_request_)
             run_next_request();
         
         typedef single_serial_socket::option_to_terminate_request option;
-        return std::shared_ptr<option>(new option(*this, std::move(request_enqueued), queue_position));
+        auto request_terminator = std::make_shared<option>(*this, packed_request, queue_position);
+        return std::bind(&option::exercise, request_terminator);
     } else {
         throw std::system_error(std::make_error_code(std::errc::network_down),
                 "This single serial socket transport has been halted, and can no longer be used.");
@@ -99,7 +199,11 @@ void single_serial_socket::on_read (
             // the lack of serialization here.
             auto handler = active_request_->second;
             serialize.unlock();
+#if _MSC_VER == 1600
+            auto error_code = std::make_error_code(static_cast<std::errc::errc>(error.value()));
+#else
             auto error_code = std::make_error_code(static_cast<std::errc>(error.value()));
+#endif
             handler(error_code, n_read, reader.str());
         } else {
             handle_socket_error(error);
@@ -138,7 +242,7 @@ void single_serial_socket::connect_socket ()
 void single_serial_socket::handle_socket_error (const boost::system::error_code& error)
 {
     if (error == boost::asio::error::operation_aborted) {
-        // For this error, the request timed out at the Riak::Store level.
+        // For this error, the request timed out at the riak::client level.
         // Once an option to terminate has been exercised, we cannot call the handler any more.
         //
         active_request_.reset();
@@ -154,7 +258,11 @@ void single_serial_socket::handle_socket_error (const boost::system::error_code&
         // An actual error occurred, and we need to give the riak::store a chance to release us.
         //
         auto handler = active_request_->second;
+#if _MSC_VER == 1600
+        auto error_code = std::make_error_code(static_cast<std::errc::errc>(error.value()));
+#else
         auto error_code = std::make_error_code(static_cast<std::errc>(error.value()));
+#endif
         handler(error_code, 0, "");
     }
 }
@@ -165,7 +273,7 @@ void single_serial_socket::run_next_request ()
     active_request_ = pending_requests_.front();
     pending_requests_.pop_front();
     auto on_write = std::bind(&single_serial_socket::on_write, this, active_request_, _1, _2);
-    asio::async_write(socket_, asio::buffer(active_request_->first->payload()), on_write);
+    asio::async_write(socket_, asio::buffer(active_request_->first), on_write);
 }
 
 

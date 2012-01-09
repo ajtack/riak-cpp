@@ -1,26 +1,21 @@
 #pragma once
-#include <riak/transport.hxx>
 #include <gmock/gmock.h>
+#include <riak/core_types.hxx>
+#include <riak/error.hxx>
 
 //=============================================================================
 namespace riak {
     namespace mock {
 //=============================================================================
 
-class transport
+class put_request
 {
-public:
-    class option_to_terminate_request;
-    MOCK_METHOD2( deliver,
-            ::riak::transport::option_to_terminate_request(
-                    const std::string&,
-                    ::riak::transport::response_handler) );
-};
-
-class transport::option_to_terminate_request
-{
-public:
-    MOCK_METHOD0( exercise, void() );
+  public:
+    class response_handler
+    {
+      public:
+        MOCK_METHOD1(execute, void(const std::error_code&));
+    };
 };
 
 //=============================================================================

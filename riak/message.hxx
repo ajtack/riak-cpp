@@ -1,5 +1,6 @@
 #pragma once
-#include <cstddef>
+#include <cassert>
+#include <cstdint>
 #include <functional>
 #include <memory>
 #include <riak/riakclient.pb.h>
@@ -61,6 +62,7 @@ struct code
     code& operator= (uint8_t val) {
         value_ = val;
         valid_ = true;
+        return *this;
     }
 
 private:

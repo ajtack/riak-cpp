@@ -1,20 +1,24 @@
 #pragma once
-#include <string>
+#include <gmock/gmock.h>
+#include <riak/core_types.hxx>
+#include <riak/error.hxx>
 
 //=============================================================================
 namespace riak {
+    namespace mock {
 //=============================================================================
 
-class request
+class delete_request
 {
-public:
-    virtual ~request ()
-    {   }
-    
-    /*! Yields the character sequence that shall be transmitted unmodified to the server. */
-    virtual const std::string& payload () const = 0;
+  public:
+    class response_handler
+    {
+      public:
+        MOCK_METHOD3(execute, void(const std::error_code&, const ::riak::key&, const ::riak::key&));
+    };
 };
 
 //=============================================================================
+    }   // namespace mock
 }   // namespace riak
 //=============================================================================
