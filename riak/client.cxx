@@ -108,14 +108,31 @@ void client::delete_object (const key& bucket, const key& k, delete_response_han
     namespace {
 //=============================================================================
 
+// This was introduced because VS2010 cannot std::bind to 12 argument parameters.
+struct delivery_arguments
+{
+	delivery_arguments (
+            const object_access_parameters& oap,
+            const request_failure_parameters& rfp,
+            transport::delivery_provider& delivery,
+            boost::asio::io_service& ios)
+	  : access_overrides(oap)
+	  , request_failure_defaults(rfp)
+	  , deliver_request(delivery)
+	  , ios(ios)
+	{   }
+
+	const object_access_parameters& access_overrides;
+	const request_failure_parameters& request_failure_defaults;
+	transport::delivery_provider& deliver_request;
+	boost::asio::io_service& ios;
+};
+
 bool resolve_siblings_on_fetch (
         const key& bucket,
         const key& k,
         sibling_resolution&,
-        const object_access_parameters&,
-        const request_failure_parameters&,
-        transport::delivery_provider&,
-        boost::asio::io_service&,
+        delivery_arguments&,
         get_response_handler,
         const std::error_code&,
         std::size_t,
@@ -144,14 +161,12 @@ void client::get_object (const key& bucket, const key& k, get_response_handler h
     request.set_deletedvclock(true);
     auto query = message::encode(request);
     
+    delivery_arguments delivery(access_overrides_, request_failure_defaults_, deliver_request_, ios_);
     message::handler handle_whole_response =
             std::bind(&resolve_siblings_on_fetch,
                     bucket, k,
                     resolve_siblings_,
-                    access_overrides_,
-                    request_failure_defaults_,
-                    deliver_request_,
-                    std::ref(ios_),
+                    delivery,
                     handle_get_result,
                     _1 /* error */, _2 /* data size */, _3 /* data */);
     auto handle_buffered_response = message::make_buffering_handler(handle_whole_response);
@@ -246,10 +261,7 @@ bool resolve_siblings_on_fetch (
         const key& bucket,
         const key& k,
         sibling_resolution& resolve_siblings,
-        const object_access_parameters& access_overrides,
-        const request_failure_parameters& request_failure_defaults,
-        transport::delivery_provider& deliver_request,
-        boost::asio::io_service& ios,
+        delivery_arguments& delivery,
         get_response_handler respond_to_application,
         const std::error_code& error,
         std::size_t bytes_received,
@@ -271,7 +283,7 @@ bool resolve_siblings_on_fetch (
                 if (response.has_vclock()) {
                     resolution_response_handler_for_object response_handler_for_object =
                             std::bind(&retry_or_return_cached_value,
-                                    bucket, k, _1, respond_to_application, deliver_request, _2, _3, _4);
+                                    bucket, k, _1, respond_to_application, delivery.deliver_request, _2, _3, _4);
                     resolution_response_handler_factory handler_factory =
                             std::bind(make_resolution_response_handler, _1, response_handler_for_object);
                     
@@ -282,7 +294,7 @@ bool resolve_siblings_on_fetch (
                                     _1,
                                     response.vclock(),
                                     handler_factory,
-                                    deliver_request);
+                                    delivery.deliver_request);
                     resolve_siblings_and_put(
                             response,
                             resolve_siblings,
@@ -292,7 +304,11 @@ bool resolve_siblings_on_fetch (
                 }
             } else if (response.content_size() == 1) {
                 if (response.has_vclock()) {
-                    value_updater update_content = std::bind(&put_with_vclock, bucket, k, _1, response.vclock(), _2, deliver_request);
+                    value_updater update_content = std::bind(&put_with_vclock,
+                            bucket, k, _1 /* object */,
+                            response.vclock(),
+                            _2 /* response handler */,
+                            delivery.deliver_request);
                     std::shared_ptr<object> the_value(response.mutable_content()->ReleaseLast());
                     respond_to_application(riak::make_server_error(), the_value, update_content);
                 } else {
@@ -302,10 +318,10 @@ bool resolve_siblings_on_fetch (
                 value_updater add_content =
                         std::bind(&put_cold,
                                 bucket, k, _1 /* object */,
-                                access_overrides,
-                                request_failure_defaults,
-                                _2 /* application response handler */,
-                                deliver_request, std::ref(ios));
+                                delivery.access_overrides,
+                                delivery.request_failure_defaults,
+                                _2 /* response handler */,
+                                delivery.deliver_request, std::ref(delivery.ios));
                 respond_to_application(riak::make_server_error(), no_content, add_content);
             }
         } else {
