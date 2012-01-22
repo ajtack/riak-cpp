@@ -170,6 +170,7 @@ bool retrieve (pbtype& result, std::size_t n, const std::string& input) { \
 }
 
 DECODE(RpbGetResp, GetResponse);
+DECODE(RpbPutReq,  PutRequest );
 DECODE(RpbPutResp, PutResponse);
 
 #undef ENCODE

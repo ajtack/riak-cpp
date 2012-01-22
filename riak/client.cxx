@@ -183,15 +183,15 @@ void client::get_object (const key& bucket, const key& k, get_response_handler h
     namespace {
 //=============================================================================
 
-typedef std::function <void(std::shared_ptr<object>&,
+typedef std::function <bool(std::shared_ptr<object>&,
                             const std::error_code&,
                             std::size_t,
                             const std::string&)>
         resolution_response_handler_for_object;
 
-typedef std::function<transport::response_handler(std::shared_ptr<object>&)> resolution_response_handler_factory;
+typedef std::function<message::handler(std::shared_ptr<object>&)> resolution_response_handler_factory;
 
-void retry_or_return_cached_value (
+bool retry_or_return_cached_value (
         const key& bucket,
         const key& k,
         std::shared_ptr<object>&,
@@ -206,8 +206,7 @@ void put_cold (
         const key& k,
         const std::shared_ptr<object>& content,
         delivery_arguments& delivery,
-        put_response_handler& respond_to_application,
-        boost::asio::io_service& ios);
+        put_response_handler& respond_to_application);
 
 void put_resolved_sibling (
         const key& bucket,
@@ -215,7 +214,7 @@ void put_resolved_sibling (
         std::shared_ptr<object>&,
         const vector_clock&,
         delivery_arguments& delivery,
-        std::function<transport::response_handler(std::shared_ptr<object>&)>&);
+        std::function<message::handler(std::shared_ptr<object>&)>&);
 
 void put_with_vclock (
         const key& bucket,
@@ -225,8 +224,22 @@ void put_with_vclock (
         delivery_arguments&,
         put_response_handler&);
 
+RpbPutReq basic_put_request_for (
+        const key& bucket,
+        const key& k,
+        const std::shared_ptr<object>& content,
+        delivery_arguments&);
 
-transport::response_handler make_resolution_response_handler (
+void send_put_request (RpbPutReq&, delivery_arguments&, message::handler);
+
+bool parse_put_response (
+        put_response_handler,
+        const std::error_code&,
+        std::size_t,
+        const std::string&);
+
+
+message::handler make_resolution_response_handler (
         std::shared_ptr<object>& resolved_sibling,
         resolution_response_handler_for_object boilerplate)
 {
@@ -317,7 +330,7 @@ bool resolve_siblings_on_fetch (
                         std::bind(&put_cold,
                                 bucket, k, _1 /* object */,
                                 delivery,
-                                _2 /* response handler */, std::ref(delivery.ios));
+                                _2 /* response handler */);
                 respond_to_application(riak::make_server_error(), no_content, add_content);
             }
         } else {
@@ -332,58 +345,37 @@ bool resolve_siblings_on_fetch (
 }
 
 
-bool parse_put_response (
-        put_response_handler,
-        const std::error_code&,
-        std::size_t,
-        const std::string&);
-
-
 void put_cold (
         const key& bucket,
         const key& k,
         const std::shared_ptr<object>& content,
         delivery_arguments& delivery,
-        put_response_handler& respond_to_application,
-        boost::asio::io_service& ios)
+        put_response_handler& respond_to_application)
 {
-    RpbPutReq request;
-    request.set_bucket(bucket);
-    request.set_key(k);
-    request.mutable_content()->CopyFrom(*content);
-    auto& overridden = delivery.access_overrides;
-    if (overridden.w )  request.set_w (*overridden.w );
-    if (overridden.dw)  request.set_dw(*overridden.dw);
-    if (overridden.pw)  request.set_pw(*overridden.pw);
-    
-    // TODO: How do we control these options without being corny?
+    RpbPutReq request = basic_put_request_for(bucket, k, content, delivery);
     request.set_return_body(false);
     request.set_if_not_modified(false);
     request.set_if_none_match(false);
     request.set_return_head(false);
-    
-    auto query = message::encode(request);
-    message::handler handle_whole_put_response = std::bind(&parse_put_response, respond_to_application, _1, _2, _3);
-    auto handle_buffered_put_response = message::make_buffering_handler(handle_whole_put_response);
-    auto wire_request = std::make_shared<request_with_timeout>(
-            query.to_string(),
-            delivery.request_failure_defaults.response_timeout,
-            handle_buffered_put_response,
-            ios);
-    
-    wire_request->dispatch_via(delivery.deliver_request);
+    send_put_request(request, delivery, std::bind(&parse_put_response, respond_to_application, _1, _2, _3));
 }
 
 
 void put_resolved_sibling (
         const key& bucket,
         const key& k,
-        std::shared_ptr<object>&,
-        const vector_clock&,
-        delivery_arguments&,
-        std::function<transport::response_handler(std::shared_ptr<object>&)>&)
+        std::shared_ptr<object>& content,
+        const vector_clock& vclock,
+        delivery_arguments& delivery,
+        std::function<message::handler(std::shared_ptr<object>&)>& response_handler_for)
 {
-    assert(false);
+    RpbPutReq request = basic_put_request_for(bucket, k, content, delivery);
+    request.set_vclock(vclock);
+    request.set_return_body(false);
+    request.set_if_not_modified(false);
+    request.set_if_none_match(false);
+    request.set_return_head(true);
+    send_put_request(request, delivery, response_handler_for(content));
 }
 
 
@@ -399,7 +391,7 @@ void put_with_vclock (
 }
 
 
-void retry_or_return_cached_value (
+bool retry_or_return_cached_value (
         const key& bucket,
         const key& k,
         std::shared_ptr<object>&,
@@ -407,10 +399,41 @@ void retry_or_return_cached_value (
         transport::delivery_provider& deliver_request,
         const std::error_code& error,
         std::size_t bytes_received,
-        const std::string& data
-        )
+        const std::string& data)
 {
     assert(false);
+}
+
+
+RpbPutReq basic_put_request_for (
+        const key& bucket,
+        const key& k,
+        const std::shared_ptr<object>& content,
+        delivery_arguments& delivery)
+{
+    RpbPutReq request;
+    request.set_bucket(bucket);
+    request.set_key(k);
+    request.mutable_content()->CopyFrom(*content);
+    auto& overridden = delivery.access_overrides;
+    if (overridden.w )  request.set_w (*overridden.w );
+    if (overridden.dw)  request.set_dw(*overridden.dw);
+    if (overridden.pw)  request.set_pw(*overridden.pw);
+    return request;
+}
+
+
+void send_put_request (RpbPutReq& r, delivery_arguments& delivery, message::handler handle_whole_put_response)
+{
+    auto query = message::encode(r);
+    auto handle_buffered_put_response = message::make_buffering_handler(handle_whole_put_response);
+    auto wire_request = std::make_shared<request_with_timeout>(
+            query.to_string(),
+            delivery.request_failure_defaults.response_timeout,
+            handle_buffered_put_response,
+            delivery.ios);
+    
+    wire_request->dispatch_via(delivery.deliver_request);
 }
 
 
