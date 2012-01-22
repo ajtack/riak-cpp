@@ -205,10 +205,8 @@ void put_cold (
         const key& bucket,
         const key& k,
         const std::shared_ptr<object>& content,
-        const object_access_parameters& overridden,
-        const request_failure_parameters& request_failure_defaults,
+        delivery_arguments& delivery,
         put_response_handler& respond_to_application,
-        transport::delivery_provider& deliver_request,
         boost::asio::io_service& ios);
 
 void put_resolved_sibling (
@@ -216,16 +214,16 @@ void put_resolved_sibling (
         const key& k,
         std::shared_ptr<object>&,
         const vector_clock&,
-        std::function<transport::response_handler(std::shared_ptr<object>&)>,
-        transport::delivery_provider&);
+        delivery_arguments& delivery,
+        std::function<transport::response_handler(std::shared_ptr<object>&)>&);
 
 void put_with_vclock (
         const key& bucket,
         const key& k,
         const std::shared_ptr<object>&,
         const vector_clock&,
-        put_response_handler&,
-        transport::delivery_provider&);
+        delivery_arguments&,
+        put_response_handler&);
 
 
 transport::response_handler make_resolution_response_handler (
@@ -271,7 +269,7 @@ bool resolve_siblings_on_fetch (
     std::shared_ptr<object> no_content;
     value_updater no_value_updater;
     auto nonsense = riak::make_server_error(riak::errc::response_was_nonsense);
-    auto tell_application_reply_was_nonsense = std::bind(respond_to_application, nonsense, _1, no_value_updater);
+    auto tell_application_reply_was_nonsense = std::bind(respond_to_application, nonsense, no_content, no_value_updater);
 
     if (not error) {
         assert(bytes_received != 0);
@@ -293,39 +291,37 @@ bool resolve_siblings_on_fetch (
                                     k,
                                     _1,
                                     response.vclock(),
-                                    handler_factory,
-                                    delivery.deliver_request);
+                                    delivery,
+                                    handler_factory);
                     resolve_siblings_and_put(
                             response,
                             resolve_siblings,
                             put_resolution_to_server);
                 } else {
-                    tell_application_reply_was_nonsense(no_content);
+                    tell_application_reply_was_nonsense();
                 }
             } else if (response.content_size() == 1) {
                 if (response.has_vclock()) {
                     value_updater update_content = std::bind(&put_with_vclock,
                             bucket, k, _1 /* object */,
                             response.vclock(),
-                            _2 /* response handler */,
-                            delivery.deliver_request);
+                            delivery,
+                            _2 /* response handler */);
                     std::shared_ptr<object> the_value(response.mutable_content()->ReleaseLast());
                     respond_to_application(riak::make_server_error(), the_value, update_content);
                 } else {
-                    tell_application_reply_was_nonsense(no_content);
+                    tell_application_reply_was_nonsense();
                 }
             } else {
                 value_updater add_content =
                         std::bind(&put_cold,
                                 bucket, k, _1 /* object */,
-                                delivery.access_overrides,
-                                delivery.request_failure_defaults,
-                                _2 /* response handler */,
-                                delivery.deliver_request, std::ref(delivery.ios));
+                                delivery,
+                                _2 /* response handler */, std::ref(delivery.ios));
                 respond_to_application(riak::make_server_error(), no_content, add_content);
             }
         } else {
-            tell_application_reply_was_nonsense(no_content);
+            tell_application_reply_was_nonsense();
         }
     } else {
         respond_to_application(error, no_content, no_value_updater);
@@ -347,16 +343,15 @@ void put_cold (
         const key& bucket,
         const key& k,
         const std::shared_ptr<object>& content,
-        const object_access_parameters& overridden,
-        const request_failure_parameters& request_failure_defaults,
+        delivery_arguments& delivery,
         put_response_handler& respond_to_application,
-        transport::delivery_provider& deliver_request,
         boost::asio::io_service& ios)
 {
     RpbPutReq request;
     request.set_bucket(bucket);
     request.set_key(k);
     request.mutable_content()->CopyFrom(*content);
+    auto& overridden = delivery.access_overrides;
     if (overridden.w )  request.set_w (*overridden.w );
     if (overridden.dw)  request.set_dw(*overridden.dw);
     if (overridden.pw)  request.set_pw(*overridden.pw);
@@ -372,11 +367,11 @@ void put_cold (
     auto handle_buffered_put_response = message::make_buffering_handler(handle_whole_put_response);
     auto wire_request = std::make_shared<request_with_timeout>(
             query.to_string(),
-            request_failure_defaults.response_timeout,
+            delivery.request_failure_defaults.response_timeout,
             handle_buffered_put_response,
             ios);
     
-    wire_request->dispatch_via(deliver_request);
+    wire_request->dispatch_via(delivery.deliver_request);
 }
 
 
@@ -385,8 +380,8 @@ void put_resolved_sibling (
         const key& k,
         std::shared_ptr<object>&,
         const vector_clock&,
-        std::function<transport::response_handler(std::shared_ptr<object>&)>,
-        transport::delivery_provider&)
+        delivery_arguments&,
+        std::function<transport::response_handler(std::shared_ptr<object>&)>&)
 {
     assert(false);
 }
@@ -397,8 +392,8 @@ void put_with_vclock (
         const key& k,
         const std::shared_ptr<object>&,
         const vector_clock&,
-        put_response_handler&,
-        transport::delivery_provider&)
+        delivery_arguments&,
+        put_response_handler&)
 {
     assert(false);
 }
