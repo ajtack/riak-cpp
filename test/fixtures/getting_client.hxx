@@ -15,9 +15,6 @@ struct getting_client
 
     getting_client ();
     ~getting_client ();
-
-    mock_response_handler response_handler_mock;
-    ::riak::get_response_handler response_handler;
 };
 
 //=============================================================================

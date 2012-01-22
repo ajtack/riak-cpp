@@ -48,6 +48,12 @@
     <ClCompile Include="fixtures\riak-client-with-mocked-transport.cxx">
       <Filter>Source Files\Fixtures</Filter>
     </ClCompile>
+    <ClCompile Include="units\put_responses.cxx">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="fixtures\get_and_put_client.cxx">
+      <Filter>Source Files\Fixtures</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="fixtures\deleting_client.hxx">
@@ -76,6 +82,12 @@
     </ClInclude>
     <ClInclude Include="fixtures\getting_client.hxx">
       <Filter>Header Files\Fixtures</Filter>
+    </ClInclude>
+    <ClInclude Include="fixtures\get_and_put_client.hxx">
+      <Filter>Header Files\Fixtures</Filter>
+    </ClInclude>
+    <ClInclude Include="mocks\put_request.hxx">
+      <Filter>Header Files\Mocks</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
