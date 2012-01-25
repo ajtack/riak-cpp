@@ -9,7 +9,7 @@ namespace riak {
 class sibling_resolution
 {
   public:
-  	MOCK_METHOD1(evaluate, std::size_t(const ::riak::siblings&));
+  	MOCK_METHOD1(evaluate, std::shared_ptr<object>(const ::riak::siblings&));
 };
 
 //=============================================================================

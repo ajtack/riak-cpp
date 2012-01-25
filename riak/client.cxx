@@ -253,17 +253,7 @@ void resolve_siblings_and_put (
         std::function<void(std::shared_ptr<object>&)> update_value)
 {
     assert(response.content_size() > 1);
-
-    // "Protect" against asshole sibling resolvers.
-    size_t resolved_sibling_index = resolve(response.content());
-    assert(resolved_sibling_index < response.content_size());
-
-    // To avoid copying, the following allows transfer of ownership of the chosen element.
-    auto siblings = response.mutable_content();
-    auto last_sibling_index = siblings->size() - 1;
-    siblings->SwapElements(last_sibling_index, resolved_sibling_index);
-    std::shared_ptr<object> resolved_content(siblings->ReleaseLast());
-
+    std::shared_ptr<object> resolved_content = resolve(response.content());
     update_value(resolved_content);
 }
 

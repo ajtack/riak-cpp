@@ -5,7 +5,7 @@
 namespace riak {
 //=============================================================================
 
-typedef ::RpbContent sibling;
+typedef object sibling;
 typedef ::google::protobuf::RepeatedPtrField<sibling> siblings;
 
 /*!
@@ -17,10 +17,9 @@ typedef ::google::protobuf::RepeatedPtrField<sibling> siblings;
  * to ensure that data stored in the system is monotonic and thus resolveable.
  *
  * \param sibs is guaranteed to be of size > 1.
- * \return The index of the content among the given siblings that is the "resolved" content. This
- *    must be a valid index within siblings, else the behavior is undefined.
+ * \return An object which represents the result of resolution among sibs.
  */
-typedef std::function<size_t(const siblings& sibs)> sibling_resolution;
+typedef std::function<std::shared_ptr<object>(const siblings& sibs)> sibling_resolution;
 
 //=============================================================================
 }   // namespace riak

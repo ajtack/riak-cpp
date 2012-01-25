@@ -10,10 +10,10 @@ namespace riak {
         	namespace {
 //=============================================================================
 
-size_t no_sibling_resolution (const ::riak::siblings&)
+const std::shared_ptr<object> no_sibling_resolution (const ::riak::siblings&)
 {
     ADD_FAILURE() << "Sibling resolution was triggered, when it should not have been!";
-    return 0;
+    return std::make_shared<RpbContent>();
 }
 
 //=============================================================================

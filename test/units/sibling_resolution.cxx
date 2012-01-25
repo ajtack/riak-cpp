@@ -23,8 +23,10 @@ RpbGetResp multi_value_get_response ()
     RpbGetResp response;
     RpbContent* x = response.add_content();
     x->set_value("x");
+    x->set_vtag("x's tag");
     RpbContent* y = response.add_content();
     y->set_value("y");
+    y->set_vtag("y's vtag");
     response.set_vclock("blah blah blah");
     return response;
 }
@@ -38,7 +40,10 @@ TEST_F(get_with_siblings, getting_siblinged_value_triggers_resolution)
     client->get_object("a", "document", response_handler);
 
     // Handle the GET response.
-    EXPECT_CALL(sibling_resolution, evaluate(_)).WillOnce(Return(0));
+    auto resolved_sibling = std::make_shared<object>();
+    resolved_sibling->set_value("something must be here for serialization!");
+    resolved_sibling->set_vtag("blah");
+    EXPECT_CALL(sibling_resolution, evaluate(_)).WillOnce(Return(resolved_sibling));
 
     // Server produces GET response
     std::string encoded_response;
@@ -53,8 +58,9 @@ TEST_F(get_with_siblings, resolved_sibling_is_returned_to_server)
     client->get_object("a", "document", response_handler);
 
     // Handle the GET response.
-    auto resolved_sibling_value = multi_value_get_response().content().Get(0).value();
-    EXPECT_CALL(sibling_resolution, evaluate(_)).WillOnce(Return(0));
+    auto resolved_sibling = std::make_shared<object>();
+    resolved_sibling->CopyFrom(multi_value_get_response().content().Get(0));
+    EXPECT_CALL(sibling_resolution, evaluate(_)).WillOnce(Return(resolved_sibling));
     std::string second_request_to_server;
     EXPECT_CALL(transport, deliver(_, _))
             .WillOnce(DoAll(
@@ -72,7 +78,8 @@ TEST_F(get_with_siblings, resolved_sibling_is_returned_to_server)
     if (not second_request_to_server.empty()) {
         RpbPutReq put_request;
         if (message::retrieve(put_request, second_request_to_server.size(), second_request_to_server)) {
-            ASSERT_EQ(resolved_sibling_value, put_request.content().value());
+            ASSERT_EQ(resolved_sibling->value(), put_request.content().value());
+            ASSERT_EQ(resolved_sibling->vtag(), put_request.content().vtag());
         } else {
             ADD_FAILURE() << "Sibling resolution produced something other than a PUT request to the server!";
         }
