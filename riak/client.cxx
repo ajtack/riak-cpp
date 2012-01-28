@@ -196,7 +196,7 @@ bool retry_or_return_cached_value (
         const key& k,
         std::shared_ptr<object>&,
         get_response_handler,
-        transport::delivery_provider&,
+        delivery_arguments&,
         const std::error_code&,
         std::size_t,
         const std::string&);
@@ -284,7 +284,7 @@ bool resolve_siblings_on_fetch (
                 if (response.has_vclock()) {
                     resolution_response_handler_for_object response_handler_for_object =
                             std::bind(&retry_or_return_cached_value,
-                                    bucket, k, _1, respond_to_application, delivery.deliver_request, _2, _3, _4);
+                                    bucket, k, _1, respond_to_application, delivery, _2, _3, _4);
                     resolution_response_handler_factory handler_factory =
                             std::bind(make_resolution_response_handler, _1, response_handler_for_object);
                     
@@ -384,14 +384,32 @@ void put_with_vclock (
 bool retry_or_return_cached_value (
         const key& bucket,
         const key& k,
-        std::shared_ptr<object>&,
+        std::shared_ptr<object>& cached_object,
         get_response_handler respond_to_application,
-        transport::delivery_provider& deliver_request,
+        delivery_arguments& delivery,
         const std::error_code& error,
         std::size_t bytes_received,
         const std::string& data)
 {
-    assert(false);
+    if (not error) {
+        assert(bytes_received != 0);
+        assert(bytes_received == data.size());
+        
+        RpbPutResp response;
+        if (message::retrieve(response, data.size(), data)) {
+            if (response.content_size() == 1 and response.has_vclock()) {
+                value_updater put_new_value = std::bind(&put_with_vclock, bucket, k, _1, response.vclock(), delivery, _2);
+                respond_to_application(riak::make_server_error(), cached_object, put_new_value);
+                return true;
+            } else {
+                assert(false);
+            }
+        } else {
+            assert(false);
+        }
+    } else {
+        assert(false);
+    }
 }
 
 
