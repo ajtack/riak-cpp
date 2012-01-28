@@ -141,6 +141,50 @@ TEST_F(get_with_siblings, resolved_sibling_produces_get_result)
     }
 }
 
+
+TEST_F(get_with_siblings, resolving_sibling_handles_erroneous_server_reply)
+{
+    client->get_object("a", "document", response_handler);
+
+    // Handle the GET response.
+    auto resolved_sibling = std::make_shared<object>();
+    resolved_sibling->CopyFrom(multi_value_get_response().content().Get(0));
+    EXPECT_CALL(sibling_resolution, evaluate(_)).Times(AnyNumber()).WillRepeatedly(Return(resolved_sibling));
+    std::string second_request_to_server;
+    ON_CALL(transport, deliver(_, _))
+            .WillByDefault(DoAll(
+                    SaveArg<0>(&second_request_to_server),
+                    SaveArg<1>(&send_from_server),
+                    Return(std::bind(&mock::transport::option_to_terminate_request::exercise, &closure_signal))));
+
+    // Server produces GET response
+    std::string encoded_response;
+    multi_value_get_response().SerializeToString(&encoded_response);
+    riak::message::wire_package wire_response(riak::message::code::GetResponse, encoded_response);
+    send_from_server(std::error_code(), wire_response.to_string().size(), wire_response.to_string());
+
+    // Check that the following PUT contained the expected sibling.
+    if (not second_request_to_server.empty()) {
+        RpbPutReq put_request;
+        if (message::retrieve(put_request, second_request_to_server.size(), second_request_to_server)) {
+            // Respond to PUT with the same sibling
+            EXPECT_CALL(response_handler_mock, execute(
+                    Ne(riak::make_server_error(riak::errc::no_error)),
+                    _,
+                    _));
+            RpbPutResp put_response;
+            std::string encoded_response;
+            put_response.SerializeToString(&encoded_response);   // Notice: wrong code!
+            riak::message::wire_package wire_response(riak::message::code::GetResponse, encoded_response);
+            send_from_server(std::error_code(), wire_response.to_string().size(), wire_response.to_string());
+        } else {
+            ADD_FAILURE() << "Sibling resolution produced something other than a PUT request to the server!";
+        }
+    } else {
+        ADD_FAILURE() << "Sibling resolution produced an empty PUT request to the server!";
+    }
+}
+
 //=============================================================================
     }   // namespace test
 }   // namespace riak

@@ -405,7 +405,10 @@ bool retry_or_return_cached_value (
                 assert(false);
             }
         } else {
-            assert(false);
+            std::shared_ptr<object> no_content;
+            auto nonsense = riak::make_server_error(riak::errc::response_was_nonsense);
+            value_updater add_sibling = std::bind(&put_cold, bucket, k, /* object */ _1, delivery, /* put resp */ _2);
+            respond_to_application(nonsense, no_content, add_sibling);
         }
     } else {
         assert(false);
