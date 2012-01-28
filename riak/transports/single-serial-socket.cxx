@@ -1,4 +1,3 @@
-#include <boost/asio/connect.hpp>
 #include <boost/asio/read.hpp>
 #include <boost/asio/write.hpp>
 #include <boost/lexical_cast.hpp>
@@ -235,7 +234,7 @@ void single_serial_socket::connect_socket ()
     using boost::asio::ip::tcp;
     tcp::resolver resolver(ios_);
     tcp::resolver::iterator endpoint_iterator = resolver.resolve(target_);
-    boost::asio::connect(socket_, endpoint_iterator);
+    socket_.connect(*endpoint_iterator);
 }
 
 

@@ -5,7 +5,7 @@ VariantDir(library_build_path, 'riak')
 common_env = Environment(
         ENV = os.environ,
         CXXFLAGS = ['--std=c++0x'],
-        CPPPATH = ['/opt/local/include', '#', '#build/'],
+        CPPPATH = ['/opt/local/include', '#', '#build/', '/usr/include'],
         LIBPATH = ['/opt/local/lib'])
 
 if ARGUMENTS.get('VERBOSE') != 'yes':

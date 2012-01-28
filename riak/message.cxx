@@ -1,3 +1,4 @@
+#include <arpa/inet.h>
 #include <riak/message.hxx>
 #include <sstream>
 #include <system_error>

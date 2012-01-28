@@ -1,6 +1,7 @@
 #pragma once
 #include <cassert>
 #include <cstdint>
+#include <system_error>
 #include <functional>
 #include <memory>
 #include <riak/riakclient.pb.h>
