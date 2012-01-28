@@ -372,12 +372,21 @@ void put_resolved_sibling (
 void put_with_vclock (
         const key& bucket,
         const key& k,
-        const std::shared_ptr<object>&,
-        const vector_clock&,
-        delivery_arguments&,
-        put_response_handler&)
+        const std::shared_ptr<object>& content,
+        const vector_clock& vclock,
+        delivery_arguments& delivery,
+        put_response_handler& application_response)
 {
-    assert(false);
+    RpbPutReq request = basic_put_request_for(bucket, k, content, delivery);
+    request.set_vclock(vclock);
+    request.set_return_body(false);
+    request.set_if_not_modified(false);
+    request.set_if_none_match(false);
+    request.set_return_head(false);
+    send_put_request(
+            request,
+            delivery,
+            std::bind(&parse_put_response, application_response, /* error */ _1, /* size */ _2, /* payload */ _3));
 }
 
 

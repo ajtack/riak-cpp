@@ -28,9 +28,15 @@ riak_client_mocked_for_two_requests::riak_client_mocked_for_two_requests ()
 	InSequence s;
 	typedef mock::transport::option_to_terminate_request mock_close_option;
 	EXPECT_CALL(transport, deliver(_, _))
-    	    .WillOnce(DoAll(SaveArg<1>(&request_handler_1), Return(std::bind(&mock_close_option::exercise, &close_request_1))));
+    	    .WillOnce(DoAll(
+    	    		SaveArg<0>(&received_request_1),
+    	    		SaveArg<1>(&request_handler_1),
+    	    		Return(std::bind(&mock_close_option::exercise, &close_request_1))));
 	EXPECT_CALL(transport, deliver(_, _))
- 	       .WillOnce(DoAll(SaveArg<1>(&request_handler_2), Return(std::bind(&mock_close_option::exercise, &close_request_2))));
+ 	       .WillOnce(DoAll(
+ 	       			SaveArg<0>(&received_request_2),
+ 	       			SaveArg<1>(&request_handler_2),
+ 	       			Return(std::bind(&mock_close_option::exercise, &close_request_2))));
 }
 
 

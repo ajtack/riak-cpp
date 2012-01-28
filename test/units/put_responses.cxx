@@ -157,6 +157,50 @@ TEST_F(get_and_put_client, client_accepts_well_formed_put_response_in_parts)
     request_handler_2(std::error_code(), second_half.size(), second_half);
 }
 
+
+TEST_F(get_and_put_client, client_correctly_delivers_put_reply_with_vector_clock)
+{
+    ::riak::value_updater update_value;
+    client->get_object("a", "document", get_response_handler);
+
+    // Build a response with a value and vector clock
+    RpbGetResp original_get_response;
+    original_get_response.set_vclock("Something!");
+    RpbContent* data = original_get_response.add_content();
+    data->set_value("Whatever");
+    std::string content_laden_reply_data;
+    original_get_response.SerializeToString(&content_laden_reply_data);
+    riak::message::wire_package content_laden_reply(riak::message::code::GetResponse, content_laden_reply_data);
+
+    // Respond to the read-before-write GET.
+    EXPECT_CALL(get_response_handler_mock, execute(
+            Eq(riak::make_server_error(riak::errc::no_error)),
+            Pointee(Property(&riak::object::value, StrEq(data->value()))),
+            _))
+        .WillOnce(SaveArg<2>(&update_value));
+    EXPECT_CALL(close_request_1, exercise()).Times(1);
+    request_handler_1(std::error_code(), content_laden_reply.to_string().size(), content_laden_reply.to_string());
+
+    // Proceed with PUT response from client.
+    const std::string& put_request_to_server = received_request_2;
+    auto val = std::make_shared<object>();
+    val->set_value("balooooooga!");
+    update_value(val, put_response_handler);
+
+    // Check that the following PUT contained the expected sibling.
+    if (not put_request_to_server.empty()) {
+        RpbPutReq put_request;
+        if (message::retrieve(put_request, put_request_to_server.size(), put_request_to_server)) {
+            ASSERT_TRUE(put_request.has_vclock());
+            ASSERT_EQ(original_get_response.vclock(), put_request.vclock());
+        } else {
+            ADD_FAILURE() << "Updating a value produced something other than a PUT request!";
+        }
+    } else {
+        ADD_FAILURE() << "The update request did not reach the server!";
+    }
+}
+
 //=============================================================================
     }   // namespace test
 }   // namespace riak
