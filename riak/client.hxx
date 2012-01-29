@@ -32,7 +32,6 @@ class client
     const object_access_parameters& object_access_override_defaults () const;
     
     void get_object (const key& bucket, const key& k, get_response_handler);
-    // void put_object (const key& bucket, const key& k, put_response_handler);
     void delete_object (const key& bucket, const key& k, delete_response_handler h);
 
   private:
