@@ -1,6 +1,5 @@
 #include <boost/asio/io_service.hpp>
 #include <boost/format.hpp>
-#include <boost/thread.hpp>
 #include <functional>
 #include <riak/client.hxx>
 #include <riak/transports/single-serial-socket.hxx>
@@ -8,57 +7,36 @@
 
 using namespace boost;
 using namespace riak::test;
+using namespace std::placeholders;
 
-::riak::sibling no_sibling_resolution (const ::riak::siblings&);
+std::shared_ptr<riak::object> no_sibling_resolution (const ::riak::siblings&);
 
-void run(boost::asio::io_service& ios)
+void handle_deletion_result (const std::error_code& error)
 {
-    ios.run();
+    if (not error)
+        announce("Deletion successful!");
+    else
+        announce("Deletion failed!");
 }
+
 
 int main (int argc, const char* argv[])
 {
     boost::asio::io_service ios;
-    std::unique_ptr<boost::asio::io_service::work> work(new boost::asio::io_service::work(ios));
-    boost::thread worker(std::bind(&run, std::ref(ios)));
     
     announce_with_pause("Connecting!");
     auto connection = riak::make_single_socket_transport("localhost", 8082, ios);
-    auto my_store = riak::make_client(connection, no_sibling_resolution, ios);
+    auto my_store = riak::make_client(connection, &no_sibling_resolution, ios);
     
     announce_with_pause("Ready to delete item test/doc");
-    auto result = my_store->bucket("test").unmap("doc");
-    
-    announce("Waiting for deletion to respond...");
-    try {
-        result.wait();
-        if (result.has_value())
-            announce("Deletion appears successful.");
-        else {
-            assert(result.has_exception());
-            try {
-                result.get();
-            } catch (const std::exception& e) {
-                announce(str(format("Deletion reported exception %1%: %2%.") % typeid(e).name() % e.what()));
-            } catch (...) {
-                announce("Deletion produced a nonstandard exception.");
-            }
-        }
-    } catch (const std::exception& e) {
-        announce_with_pause(str(format("Deletion reported exception %1%: %2%.") % typeid(e).name() % e.what()));
-    }
-    
-    announce_with_pause("Scenario completed.");
-
-    work.reset();
-    worker.join();
+    my_store->delete_object("test", "doc", std::bind(&handle_deletion_result, _1));
+    ios.run();
     return 0;
 }
 
-::riak::sibling no_sibling_resolution (const ::riak::siblings&)
+
+std::shared_ptr<riak::object> no_sibling_resolution (const ::riak::siblings&)
 {
-    announce("Siblings being resolved!");
-    ::riak::sibling garbage;
-    garbage.set_value("<result of sibling resolution>");
-    return garbage;
+    // Deletion never triggers sibling resolution in Riak-Cpp.
+    assert(false);
 }

@@ -1,6 +1,5 @@
 #include <boost/asio/io_service.hpp>
 #include <boost/format.hpp>
-#include <boost/thread.hpp>
 #include <functional>
 #include <riak/client.hxx>
 #include <riak/transports/single-serial-socket.hxx>
@@ -8,76 +7,68 @@
 
 using namespace boost;
 using namespace riak::test;
+using namespace std::placeholders;
 
-::riak::sibling no_sibling_resolution (const ::riak::siblings&);
+std::shared_ptr<riak::object> no_sibling_resolution (const ::riak::siblings&);
 
-void run(boost::asio::io_service& ios)
+void handle_put_result (const std::error_code& error)
 {
-    ios.run();
+    if (not error)
+        announce("Put succeeded!");
+    else
+        announce("Put failed!");
 }
+
+
+void print_object_value (
+        const std::string& new_value,
+        const std::error_code& error,
+        std::shared_ptr<riak::object> object,
+        riak::value_updater& update_value)
+{
+    if (not error) {
+        if (!! object)
+            announce(str(format("Fetch succeeded! Value is: %1%") % object->value()));
+        else
+            announce(str(format("Fetch succeeded! No value found.")));
+        
+        auto new_content = std::make_shared<riak::object>();
+        new_content->set_value(new_value);
+        new_content->set_content_type("text/plain");
+
+        announce_with_pause(str(format("Ready to store \"%1%\" to test/doc...") % new_value));
+        riak::put_response_handler put_handler = std::bind(&handle_put_result, _1);
+        update_value(new_content, put_handler);
+    } else {
+        announce("Could not receive the object from Riak due to a hard error.");
+    }
+}
+
 
 int main (int argc, const char* argv[])
 {
     boost::asio::io_service ios;
-    std::unique_ptr<boost::asio::io_service::work> work(new boost::asio::io_service::work(ios));
-    boost::thread worker(std::bind(&run, std::ref(ios)));
     
     announce_with_pause("Connecting!");
     auto connection = riak::make_single_socket_transport("localhost", 8082, ios);
-    auto my_store = riak::make_client(connection, no_sibling_resolution, ios);
-    
-    announce_with_pause("Ready to fetch item test/doc");
-    auto cached_object = my_store->bucket("test")["doc"];
-    auto result = cached_object->fetch();
-    
-    announce("Waiting for operation to respond...");
-    result.wait();
-    if (result.has_value()) {
-        announce("Fetch appears successful.");
-        std::string stored_value = (argc > 1)? argv[1] : "oogaboogah";
-        RpbContent c;
-        c.set_value(stored_value);
-        c.set_content_type("text/plain");
+    auto my_store = riak::make_client(connection, &no_sibling_resolution, ios);
 
-        announce_with_pause(str(format("Ready to store '%1%' to item test/doc") % stored_value));
-        auto result = cached_object->put(c);
-        
-        announce("Waiting for operation to respond...");
-        result.wait();
-        if (result.has_value()) {
-            announce("Store appears successful.");
-        } else {
-            assert(result.has_exception());
-            try {
-                result.get();
-            } catch (const std::exception& e) {
-                announce(str(format("Store reported exception %1%: %2%.") % typeid(e).name() % e.what()));
-            } catch (...) {
-                announce("Fetch produced a nonstandard exception.");
-            }
-        }
-    } else {
-        assert(result.has_exception());
-        try {
-            result.get();
-        } catch (const std::exception& e) {
-            announce(str(format("Fetch reported exception %1%: %2%.") % typeid(e).name() % e.what()));
-        } catch (...) {
-            announce("Fetch produced a nonstandard exception.");
-        }
-    }
+    announce_with_pause("Ready to fetch item test/doc...");
+    if (argc > 1)
+        my_store->get_object("test", "doc", std::bind(&print_object_value, argv[1], _1, _2, _3));        
+    else
+        my_store->get_object("test", "doc", std::bind(&print_object_value, "Some nonsense!", _1, _2, _3));
     
-    announce_with_pause("Scenario completed.");
-
-    work.reset();
-    worker.join();
+    ios.run();
     return 0;
 }
 
-::riak::sibling no_sibling_resolution (const ::riak::siblings&)
+
+std::shared_ptr<riak::object> no_sibling_resolution (const ::riak::siblings&)
 {
     announce("Siblings being resolved!");
-    ::riak::sibling garbage;
-    garbage.set_value("<result of sibling resolution>");
+    auto garbage = std::make_shared<riak::object>();
+    garbage->set_value("<result of sibling resolution>");
+    garbage->set_content_type("text/plain");
     return garbage;
 }
