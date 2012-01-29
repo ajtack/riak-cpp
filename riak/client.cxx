@@ -128,15 +128,12 @@ struct delivery_arguments
 	boost::asio::io_service& ios;
 };
 
-bool accept_get_response (
+void run_get_request (
         const key& bucket,
         const key& k,
         sibling_resolution&,
         delivery_arguments&,
-        get_response_handler,
-        const std::error_code&,
-        std::size_t,
-        const std::string&);
+        get_response_handler&);
 
 //=============================================================================
     }   // namespace (anonymous)
@@ -147,11 +144,36 @@ void client::get_object (const key& bucket, const key& k, get_response_handler h
     assert(this);
     assert(not bucket.empty());  // TODO: if (not bucket.empty) ... else ...
     assert(not k.empty());       // TODO: if (not key.empty) ... else ...
+    
+    delivery_arguments delivery(access_overrides_, request_failure_defaults_, deliver_request_, ios_);
+    run_get_request(bucket, k, resolve_siblings_, delivery, handle_get_result);
+}
 
+//=============================================================================
+    namespace {
+//=============================================================================
+
+bool accept_get_response (
+        const key& bucket,
+        const key& k,
+        sibling_resolution&,
+        delivery_arguments&,
+        get_response_handler,
+        const std::error_code&,
+        std::size_t,
+        const std::string&);
+
+void run_get_request (
+        const key& bucket,
+        const key& k,
+        sibling_resolution& resolve_siblings,
+        delivery_arguments& delivery,
+        get_response_handler& handle_get_result)
+{
     RpbGetReq request;
     request.set_bucket(bucket);
     request.set_key(k);
-    auto& overridden = access_overrides_;
+    auto& overridden = delivery.access_overrides;
     if (overridden.r )            request.set_r           (*overridden.r);
     if (overridden.pr)            request.set_pr          (*overridden.pr);
     if (overridden.basic_quorum)  request.set_basic_quorum(*overridden.basic_quorum);
@@ -160,28 +182,24 @@ void client::get_object (const key& bucket, const key& k, get_response_handler h
     request.set_head(false);
     request.set_deletedvclock(true);
     auto query = message::encode(request);
-    
-    delivery_arguments delivery(access_overrides_, request_failure_defaults_, deliver_request_, ios_);
+
     message::handler handle_whole_response =
             std::bind(&accept_get_response,
                     bucket, k,
-                    resolve_siblings_,
+                    resolve_siblings,
                     delivery,
                     handle_get_result,
-                    _1 /* error */, _2 /* data size */, _3 /* data */);
+                    /* error */ _1, /* data size */ _2, /* data */ _3);
     auto handle_buffered_response = message::make_buffering_handler(handle_whole_response);
     auto wire_request = std::make_shared<request_with_timeout>(
             query.to_string(),
-            request_failure_defaults_.response_timeout,
+            delivery.request_failure_defaults.response_timeout,
             handle_buffered_response,
-            ios_);
+            delivery.ios);
     
-    wire_request->dispatch_via(deliver_request_);
+    wire_request->dispatch_via(delivery.deliver_request);
 }
 
-//=============================================================================
-    namespace {
-//=============================================================================
 
 typedef std::function <bool(std::shared_ptr<object>&,
                             const std::error_code&,
@@ -405,8 +423,9 @@ bool retry_or_return_cached_value (
                 value_updater put_new_value = std::bind(&put_with_vclock, bucket, k, _1, response.vclock(), delivery, _2);
                 respond_to_application(riak::make_server_error(), cached_object, put_new_value);
             } else {
-                resolve_siblings_and_put(response, bucket, k, resolve_siblings, delivery, respond_to_application);
+                run_get_request(bucket, k, resolve_siblings, delivery, respond_to_application);
             }
+
             return true;
         } else {
             std::shared_ptr<object> no_content;

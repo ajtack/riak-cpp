@@ -170,6 +170,7 @@ bool retrieve (pbtype& result, std::size_t n, const std::string& input) { \
     return retrieve_body_with_code(code::codename, result, n, input);    \
 }
 
+DECODE(RpbGetReq,  GetRequest );
 DECODE(RpbGetResp, GetResponse);
 DECODE(RpbPutReq,  PutRequest );
 DECODE(RpbPutResp, PutResponse);

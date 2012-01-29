@@ -115,6 +115,7 @@ template <> wire_package encode (const RpbDelReq&);
 template <typename PbMessageBody>
 bool retrieve (PbMessageBody& body, std::size_t bytes_received, const std::string& data);
 
+template <> bool retrieve (const RpbGetReq&,  std::size_t, const std::string&);
 template <> bool retrieve (const RpbGetResp&, std::size_t, const std::string&);
 template <> bool retrieve (const RpbPutReq&,  std::size_t, const std::string&);
 template <> bool retrieve (const RpbPutResp&, std::size_t, const std::string&);

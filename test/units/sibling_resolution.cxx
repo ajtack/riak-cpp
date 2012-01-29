@@ -217,6 +217,7 @@ TEST_F(get_with_siblings, multiple_sibling_resolutions_are_correctly_handled)
                     .Times(AnyNumber())
                     .WillRepeatedly(Return(second_resolved_sibling));
 
+            // Expect a third request: fetching the bodies of the siblings.
             std::string third_request_to_server;
             EXPECT_CALL(transport, deliver(_, _))
                     .WillOnce(DoAll(
@@ -225,20 +226,13 @@ TEST_F(get_with_siblings, multiple_sibling_resolutions_are_correctly_handled)
                             Return(std::bind(
                                     &mock::transport::option_to_terminate_request::exercise, &closure_signal))));
             
-            // Produce another siblinged response from the server.
+            // Produce the response to request #2: multi-sibling put response.
             RpbPutResp put_response;
             put_response.set_vclock(put_request.vclock());
-            if (put_request.return_body()) {
-                RpbContent* response_content_1 = put_response.add_content();
-                response_content_1->CopyFrom(multi_value_get_response().content().Get(0));
-                RpbContent* response_content_2 = put_response.add_content();
-                response_content_2->CopyFrom(multi_value_get_response().content().Get(1));
-            } else if (put_request.return_head()) {
-                RpbContent* response_content_1 = put_response.add_content();
-                response_content_1->set_value("");
-                RpbContent* response_content_2 = put_response.add_content();
-                response_content_2->set_value("");
-            }
+            RpbContent* response_content_1 = put_response.add_content();
+            response_content_1->set_value("");
+            RpbContent* response_content_2 = put_response.add_content();
+            response_content_2->set_value("");
 
             std::string encoded_response;
             put_response.SerializeToString(&encoded_response);
@@ -246,31 +240,57 @@ TEST_F(get_with_siblings, multiple_sibling_resolutions_are_correctly_handled)
             send_from_server(std::error_code(), wire_response.to_string().size(), wire_response.to_string());
 
             if (not third_request_to_server.empty()) {
-                if (message::retrieve(put_request, third_request_to_server.size(), third_request_to_server)) {
-                    // Respond to the last PUT with the same sibling, resulting in a successful GET.
-                    EXPECT_CALL(response_handler_mock, execute(
-                            Eq(riak::make_server_error(riak::errc::no_error)),
-                            Pointee(Property(&riak::object::value, StrEq(second_resolved_sibling->value()))),
-                            _));
-                    RpbPutResp put_response;
-                    put_response.set_vclock(put_request.vclock());
-                    if (put_request.return_body()) {
-                        RpbContent* response_content = put_response.add_content();
-                        response_content->set_value(put_request.content().value());  // value doesn't matter.
-                    } else if (put_request.return_head()) {
-                        RpbContent* response_content = put_response.add_content();
-                        response_content->set_value("");
-                    }
+                RpbGetReq second_get_request;   // A PUT would have returned only heads, so another GET is needed.
+                if (message::retrieve(second_get_request, third_request_to_server.size(), third_request_to_server)) {
+                    // Expect a fourth request: the second PUT resolution
+                    std::string fourth_request_to_server;
+                    EXPECT_CALL(transport, deliver(_, _))
+                            .WillOnce(DoAll(
+                                    SaveArg<0>(&fourth_request_to_server),
+                                    SaveArg<1>(&send_from_server),
+                                    Return(std::bind(
+                                            &mock::transport::option_to_terminate_request::exercise,
+                                            &closure_signal))));
 
-                    std::string encoded_response;
-                    put_response.SerializeToString(&encoded_response);
-                    riak::message::wire_package wire_response(riak::message::code::PutResponse, encoded_response);
-                    send_from_server(std::error_code(), wire_response.to_string().size(), wire_response.to_string());
+                    // Send the same siblings again; hope this is fine.
+                    send_from_server(
+                            std::error_code(),
+                            multisibling_response.to_string().size(),
+                            multisibling_response.to_string());
+                    
+                    if (not fourth_request_to_server.empty()) {
+                        RpbPutReq second_put_request;
+                        if (message::retrieve(second_put_request, fourth_request_to_server.size(), fourth_request_to_server)) {
+                            // Respond to the last PUT with the same sibling, resulting in a successful GET.
+                            EXPECT_CALL(response_handler_mock, execute(
+                                    Eq(riak::make_server_error(riak::errc::no_error)),
+                                    Pointee(Property(&riak::object::value, StrEq(second_resolved_sibling->value()))),
+                                    _));
+                            RpbPutResp put_response;
+                            put_response.set_vclock(put_request.vclock());
+                            if (put_request.return_body()) {
+                                RpbContent* response_content = put_response.add_content();
+                                response_content->set_value(put_request.content().value());  // value doesn't matter.
+                            } else if (put_request.return_head()) {
+                                RpbContent* response_content = put_response.add_content();
+                                response_content->set_value("");
+                            }
+
+                            std::string encoded_response;
+                            put_response.SerializeToString(&encoded_response);
+                            riak::message::wire_package wire_response(riak::message::code::PutResponse, encoded_response);
+                            send_from_server(std::error_code(), wire_response.to_string().size(), wire_response.to_string());
+                        } else {
+                            ADD_FAILURE() << "Second-round sibling resolution produced something other than a PUT!";                    
+                        }
+                    } else {
+                        ADD_FAILURE() << "Second-round sibling resolution produced an empty request to the server!";
+                    }
                 } else {
-                    ADD_FAILURE() << "Second-round sibling resolution produced something other than a PUT!";                    
+                    ADD_FAILURE() << "Expected a second-round GET, received something else!";                    
                 }
             } else {
-                ADD_FAILURE() << "Second-round sibling resolution produced an empty request to the server!";
+                ADD_FAILURE() << "Expected a second-round sibling resolution GET request!";
             }
         } else {
             ADD_FAILURE() << "Sibling resolution produced something other than a PUT request to the server!";
@@ -278,6 +298,8 @@ TEST_F(get_with_siblings, multiple_sibling_resolutions_are_correctly_handled)
     } else {
         ADD_FAILURE() << "Sibling resolution produced an empty request to the server!";
     }
+
+    // There has GOT to be a better way to write this test.
 }
 
 //=============================================================================
