@@ -26,79 +26,59 @@ Quick Start Guide
 
 > Riak is like sex. Let's stop talking about it and do it. —Anonymous
 
-The following program demonstrates how to attach to a Riak store and fetch a key. It also hints at how you might start doing this asynchronously.
+To fetch or store an object using Riak-Cpp, you need to have four things set up:
 
-    #include <boost/asio/io_service.hpp>
-    #include <boost/thread.hpp>
-    #include <functional>
-    #include <riak/store.hxx>
-    
-    void run(boost::asio::io_service& ios)
-    {
-        ios.run();
-    }
-    
-    int main (int argc, const char* argv[])
-    {
-        // Start a thread that handles socket activity.
-        boost::asio::io_service ios;
-        std::unique_ptr<boost::asio::io_service::work> work(new boost::asio::io_service::work(ios));
-        boost::thread worker(std::bind(&run, std::ref(ios)));
-    
-        // Connect to a Riak Store. Note that Riak-Cpp uses the Protocol Buffers API to access Riak.
-        riak::single_serial_socket connection("localhost", 8091, ios);
-        auto my_store = riak::make_client(connection, ios);
-        
-        // Fetch a key synchronously using Futures. In HTTP, this would be the object at test/doc.
-        auto result = my_store->bucket("test")["doc"]->fetch();
-        result.wait();
-        if (result.has_value() and not result.get()) {
-            std::cout << "Fetch appears successful. Value was not found." << std::endl;
-        } else if (result.has_value()) {
-            auto val = result.get();
-            if (val->size() != 0)
-                std::cout << "Fetch appears successful. First value is: " << val->Get(0).value() << std::endl;
-            else
-                std::cout << "Fetch was successful: no data is mapped at this key." << std::endl;
-        } else {
-            assert(result.has_exception());
-            try {
-                result.get();
-            } catch (const std::exception& e) {
-                std::cout << "Fetch reported exception: " << e.what() << std::endl;
-            }
-        }
-        
-        return 0;
-    }
+ 1. **A sibling-resolution strategy.** Sibling-resolution is a natural property of an eventually-consistent store like Riak. Riak-Cpp forces you to think about this problem up front. If you do not expect siblings, be sure to log errors when sibling resolution is encountered on your application.
 
-How-To: Connection Pooling
-==========================
+   The shape of a sibling-resolution handler is as the below. You will of course want this to depend on your data type.
 
-Riak-Cpp allows you to implement connection pooling in a manner exactly as sophisticated and resource-hungry as you desire. The [current default provided](http://github.com/ajtack/riak-cpp/blob/a1475ce114021fc6f4ca068a5f1eb2c1bee16c51/riak/transports/single-serial-socket.hxx) will only allow one simultaneous concurrent request. A better-performing default is [high on our backlog](http://github.com/ajtack/riak-cpp/issues/7) to fix, but in the meantime the following should help you improve performance in your own system.
+        std::shared_ptr<riak::object> random_sibling_resolution (const ::riak::siblings&)
+        {
+            std::cout << "Siblings being resolved!" << std::endl;
+            auto new_content = std::make_shared<riak::object>();
+            new_content->set_value("<result of sibling resolution>");
+	        return new_content;
+	    }
 
-Implementing your own connection pool requires subclassing the [riak::transport](http://github.com/ajtack/riak-cpp/blob/a1475ce114021fc6f4ca068a5f1eb2c1bee16c51/riak/transport.hxx) interface. The primary interface element is the `deliver()` function.
+    You will apply sibling-resolution immediately upon construction of the Riak client.
 
-    class transport
-    {
-      public:
-        class option_to_terminate_request;    
-        typedef std::function<void(std::error_code, std::size_t, const std::string&)> response_handler;
+ 2. **A result callback for the action you perform.** Riak-Cpp is asynchronous in all cases. As C++11 evolves, we will be able to use lambdas to shorten some cases, but for now we suggest defining functions like the below to handle your get and put responses.
 
-        virtual std::shared_ptr<option_to_terminate_request> deliver (
-                std::shared_ptr<const request> r,
-                response_handler h) = 0;
-    };
+	    void print_object_value (const std::error_code& error, std::shared_ptr<riak::object> object, riak::value_updater&)
+	    {
+	        if (not error) {
+	            if (!! object)
+	                std::cout << "Fetch succeeded! Value is: " << object->value() << std::endl;
+	            else
+	                std::cout << "Fetch succeeded! No value found." << std::endl;
+	        } else {
+	            std::cout << "Could not receive the object from Riak due to a network or server error." << std::endl;
+	        }
+	    }
 
-Your implementation of `deliver()` must either dispatch the request in the order you choose or fail to accept the request. You may call h as many times as you want, as data streams in from the server. The implementation may call h before it returns the first time, but the resulting pointer _must not_ be NULL. This pointer (we call it an option) is the only correct way to release connection resources for a request, and will be exercise()'d by the library either upon receipt of a complete request or upon timeout. Your connection pool must be prepared for this event at any time and possibly multiple times, but the implementation (as far as locking, queueing, deferring resource cleanup) is completely up to you. Thus, you will also have to implement its body.
+	The third parameter to this handler can be used to store values back to a key that you have fetched. Because we need to trigger sibling resolution, it is forced by Riak-Cpp that every Put occur only following a Get.
 
-    class transport::option_to_terminate_request
-    {
-      public:
-        virtual void exercise () = 0;
-    };
+ 3. **A connection pool.** For experimentation, we currently provide a low-performance single-socket connection "pool" at your disposal. You can use it by giving the host and port as below.
 
-Notice that, by corollary of the above, you are encouraged but not required to implement `deliver()` in an asynchronous fashion, wherein the method returns immediately even though the response from the server arrives considerably later.
+	    boost::io_service ios;
+	    auto connection = riak::make_single_socket_transport("localhost", 8082, ios);
+
+	For any high-performance application, you will need your own connection pool. See `transport.hxx` for details on what interfaces you need to implement.
+
+ 4. **A boost::io_service to run request timeouts.** This may eventually be replaced, but for the time being you will need to run (and thus watch) a `boost::io_service` instance that Riak-Cpp will use to run `deadline_timer`s and ensure that your requests eventually time out.
+
+With all of the above in place, we can write a simple program that fetches a value from the server.
+
+	int main (int argc, const char* argv[])
+	{
+	    boost::asio::io_service ios;
+	    auto connection = riak::make_single_socket_transport("localhost", 8082, ios);
+	    auto my_store = riak::make_client(connection, &random_sibling_resolution, ios);
+
+	    my_store->get_object("test", "doc", std::bind(&print_object_value, _1, _2, _3));
+	    ios.run();
+	    return 0;
+	}
 
 Implementation Status
 =====================
@@ -114,7 +94,8 @@ In addition, the following are supported:
  * Roll-Your-Own connection pooling (a default is provided)
  * Timeouts for store accesses of any kind
  * Storage access paremeters (R, W, etc.) for all implemented operations.
- * Asynchronous behavior
+ * Asynchronous behavior, allowing performant code
+ * Automatic sibling resolution
 
 Be sure to check out the Github [Issues](http://github.com/ajtack/riak-cpp/issues) to see what's planned next for development.
 
