@@ -234,7 +234,17 @@ void single_serial_socket::connect_socket ()
     using boost::asio::ip::tcp;
     tcp::resolver resolver(ios_);
     tcp::resolver::iterator endpoint_iterator = resolver.resolve(target_);
-    socket_.connect(*endpoint_iterator);
+    tcp::resolver::iterator end;
+
+    boost::system::error_code error = boost::asio::error::host_not_found;
+    while (error && endpoint_iterator != end)
+    {
+        socket_.close();
+        socket_.connect(*endpoint_iterator++, error);
+    }
+
+    if (error)
+        throw boost::system::system_error(error);
 }
 
 
