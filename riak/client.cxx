@@ -128,7 +128,7 @@ struct delivery_arguments
 	boost::asio::io_service& ios;
 };
 
-bool resolve_siblings_on_fetch (
+bool accept_get_response (
         const key& bucket,
         const key& k,
         sibling_resolution&,
@@ -163,7 +163,7 @@ void client::get_object (const key& bucket, const key& k, get_response_handler h
     
     delivery_arguments delivery(access_overrides_, request_failure_defaults_, deliver_request_, ios_);
     message::handler handle_whole_response =
-            std::bind(&resolve_siblings_on_fetch,
+            std::bind(&accept_get_response,
                     bucket, k,
                     resolve_siblings_,
                     delivery,
@@ -195,6 +195,7 @@ bool retry_or_return_cached_value (
         const key& bucket,
         const key& k,
         std::shared_ptr<object>&,
+        sibling_resolution&,
         get_response_handler,
         delivery_arguments&,
         const std::error_code&,
@@ -247,18 +248,28 @@ message::handler make_resolution_response_handler (
 }
 
 
+template <typename ResponseType>
 void resolve_siblings_and_put (
-        RpbGetResp response,
-        sibling_resolution& resolve,
-        std::function<void(std::shared_ptr<object>&)> update_value)
+        const ResponseType& response,
+        const key& bucket,
+        const key& k,
+        sibling_resolution& resolve_siblings,
+        delivery_arguments& delivery,
+        get_response_handler respond_to_application)
 {
     assert(response.content_size() > 1);
-    std::shared_ptr<object> resolved_content = resolve(response.content());
-    update_value(resolved_content);
+
+    resolution_response_handler_for_object response_handler_for_object =
+            std::bind(&retry_or_return_cached_value, bucket, k, _1, resolve_siblings, respond_to_application, delivery,
+                    _2, _3, _4);
+    resolution_response_handler_factory handler_factory =
+            std::bind(make_resolution_response_handler, _1, response_handler_for_object);
+    auto resolved_content = resolve_siblings(response.content());
+    put_resolved_sibling(bucket, k, resolved_content, response.vclock(), delivery, handler_factory);
 }
 
 
-bool resolve_siblings_on_fetch (
+bool accept_get_response (
         const key& bucket,
         const key& k,
         sibling_resolution& resolve_siblings,
@@ -282,24 +293,7 @@ bool resolve_siblings_on_fetch (
         if (message::retrieve(response, data.size(), data)) {
             if (response.content_size() > 1) {
                 if (response.has_vclock()) {
-                    resolution_response_handler_for_object response_handler_for_object =
-                            std::bind(&retry_or_return_cached_value,
-                                    bucket, k, _1, respond_to_application, delivery, _2, _3, _4);
-                    resolution_response_handler_factory handler_factory =
-                            std::bind(make_resolution_response_handler, _1, response_handler_for_object);
-                    
-                    std::function<void(std::shared_ptr<object>&)> put_resolution_to_server =
-                            std::bind(&put_resolved_sibling,
-                                    bucket,
-                                    k,
-                                    _1,
-                                    response.vclock(),
-                                    delivery,
-                                    handler_factory);
-                    resolve_siblings_and_put(
-                            response,
-                            resolve_siblings,
-                            put_resolution_to_server);
+                    resolve_siblings_and_put(response, bucket, k, resolve_siblings, delivery, respond_to_application);
                 } else {
                     tell_application_reply_was_nonsense();
                 }
@@ -394,6 +388,7 @@ bool retry_or_return_cached_value (
         const key& bucket,
         const key& k,
         std::shared_ptr<object>& cached_object,
+        sibling_resolution& resolve_siblings,
         get_response_handler respond_to_application,
         delivery_arguments& delivery,
         const std::error_code& error,
@@ -409,10 +404,10 @@ bool retry_or_return_cached_value (
             if (response.content_size() == 1 and response.has_vclock()) {
                 value_updater put_new_value = std::bind(&put_with_vclock, bucket, k, _1, response.vclock(), delivery, _2);
                 respond_to_application(riak::make_server_error(), cached_object, put_new_value);
-                return true;
             } else {
-                assert(false);
+                resolve_siblings_and_put(response, bucket, k, resolve_siblings, delivery, respond_to_application);
             }
+            return true;
         } else {
             std::shared_ptr<object> no_content;
             auto nonsense = riak::make_server_error(riak::errc::response_was_nonsense);
