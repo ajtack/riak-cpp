@@ -11,7 +11,7 @@ using std::placeholders::_2;
 using std::placeholders::_3;
 
 deleting_client::deleting_client ()
-  : response_handler(std::bind(&mock_response_handler::execute, &response_handler_mock, _1, _2, _3))
+  : response_handler(std::bind(&mock_response_handler::execute, &response_handler_mock, _1))
 {   }
 
 //=============================================================================

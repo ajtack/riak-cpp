@@ -51,19 +51,17 @@ client::client (
 
 bool accept_delete_response (
         delete_response_handler respond_to_application,
-        const key& bucket,
-        const key& k,
         const std::error_code& error,
         std::size_t bytes_received,
         const std::string& data)
 {
     if (not error) {
         if (message::verify_code(message::code::DeleteResponse, bytes_received, data))
-            respond_to_application(riak::make_server_error(), bucket, k);
+            respond_to_application(riak::make_server_error());
         else
-            respond_to_application(riak::make_server_error(riak::errc::response_was_nonsense), bucket, k);
+            respond_to_application(riak::make_server_error(riak::errc::response_was_nonsense));
     } else {
-        respond_to_application(error, bucket, k);
+        respond_to_application(error);
     }
 
     // Always terminate the request, whether success or failure.
@@ -92,7 +90,7 @@ void client::delete_object (const key& bucket, const key& k, delete_response_han
     if (overridden.pw)   request.set_pw(*overridden.pw);
     auto query = message::encode(request);
     
-    message::handler handle_whole_response = std::bind(&accept_delete_response, h, bucket, k, _1, _2, _3);
+    message::handler handle_whole_response = std::bind(&accept_delete_response, h, _1, _2, _3);
     auto handle_buffered_response = message::make_buffering_handler(handle_whole_response);
     auto wire_request = std::make_shared<request_with_timeout>(
             query.to_string(),

@@ -14,7 +14,7 @@ class delete_request
     class response_handler
     {
       public:
-        MOCK_METHOD3(execute, void(const std::error_code&, const ::riak::key&, const ::riak::key&));
+        MOCK_METHOD1(execute, void(const std::error_code&));
     };
 };
 

@@ -6,10 +6,7 @@
 namespace riak {
 //=============================================================================
 
-typedef std::function
-		< void(const std::error_code&, const ::riak::key&, const ::riak::key&) >
-		delete_response_handler;
-
+typedef std::function<void(const std::error_code&)> delete_response_handler;
 typedef std::function<void(const std::error_code&)> put_response_handler;
 
 /*!

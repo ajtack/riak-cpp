@@ -24,7 +24,7 @@ TEST_F(deleting_client, client_survives_nonsense_reply_to_unmap)
     // Expect no calls, as this particular garbage suggests a longer reply; the request
     // would eventually time out.
     EXPECT_CALL(closure_signal, exercise()).Times(0);
-    EXPECT_CALL(response_handler_mock, execute(_, _, _)).Times(0);
+    EXPECT_CALL(response_handler_mock, execute(_)).Times(0);
     EXPECT_CALL(sibling_resolution, evaluate(_)).Times(0);
     std::string garbage("uhetnaoutaenosueosaueoas");
     send_from_server(std::error_code(), garbage.size(), garbage);
@@ -36,10 +36,7 @@ TEST_F(deleting_client, client_survives_wrong_code_reply_to_unmap)
     client->delete_object("a", "document", response_handler);
 
     EXPECT_CALL(closure_signal, exercise());
-    EXPECT_CALL(response_handler_mock, execute(
-            Eq(riak::make_server_error(riak::errc::response_was_nonsense)),
-            Eq("a"),
-            Eq("document")));
+    EXPECT_CALL(response_handler_mock, execute(Eq(riak::make_server_error(riak::errc::response_was_nonsense))));
     EXPECT_CALL(sibling_resolution, evaluate(_)).Times(0);
     riak::message::wire_package bad_reply(riak::message::code::GetResponse, "whatever");
     send_from_server(std::error_code(), bad_reply.to_string().size(), bad_reply.to_string());
@@ -51,10 +48,7 @@ TEST_F(deleting_client, client_survives_trailing_data_with_RpbDelResp)
     client->delete_object("a", "document", response_handler);
 
     EXPECT_CALL(closure_signal, exercise());
-    EXPECT_CALL(response_handler_mock, execute(
-            Eq(riak::make_server_error(riak::errc::no_error)),
-            Eq("a"),
-            Eq("document")));
+    EXPECT_CALL(response_handler_mock, execute(Eq(riak::make_server_error(riak::errc::no_error))));
     EXPECT_CALL(sibling_resolution, evaluate(_)).Times(0);
     riak::message::wire_package long_reply(riak::message::code::DeleteResponse, "atnhueoauheas(garbage)");
     send_from_server(std::error_code(), long_reply.to_string().size(), long_reply.to_string());
@@ -66,10 +60,7 @@ TEST_F(deleting_client, client_accepts_well_formed_RbpDelResp)
     client->delete_object("a", "document", response_handler);
     
     EXPECT_CALL(closure_signal, exercise());
-    EXPECT_CALL(response_handler_mock, execute(
-            Eq(riak::make_server_error(riak::errc::no_error)),
-            Eq("a"),
-            Eq("document")));
+    EXPECT_CALL(response_handler_mock, execute(Eq(riak::make_server_error(riak::errc::no_error))));
     EXPECT_CALL(sibling_resolution, evaluate(_)).Times(0);
     riak::message::wire_package clean_reply(riak::message::code::DeleteResponse, "");
     send_from_server(std::error_code(), clean_reply.to_string().size(), clean_reply.to_string());
@@ -92,18 +83,12 @@ TEST_F(deleting_client, client_accepts_well_formed_unmap_response_in_parts)
 
     // The first half should be correctly buffered.
     EXPECT_CALL(closure_signal, exercise()).Times(0);
-    EXPECT_CALL(response_handler_mock, execute(
-            Eq(riak::make_server_error(riak::errc::no_error)),
-            Eq("a"),
-            Eq("document"))).Times(0);
+    EXPECT_CALL(response_handler_mock, execute(_)).Times(0);
     send_from_server(std::error_code(), first_half.size(), first_half);
 
     // The second half should trigger a response callback.
     EXPECT_CALL(closure_signal, exercise());
-    EXPECT_CALL(response_handler_mock, execute(
-            Eq(riak::make_server_error(riak::errc::no_error)),
-            Eq("a"),
-            Eq("document")));
+    EXPECT_CALL(response_handler_mock, execute(Eq(riak::make_server_error(riak::errc::no_error))));
     send_from_server(std::error_code(), second_half.size(), second_half);
 }
 
