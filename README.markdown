@@ -30,7 +30,7 @@ To fetch or store an object using Riak-Cpp, you need to have four things set up:
 
  1. **A sibling-resolution strategy.** Sibling-resolution is a natural property of an eventually-consistent store like Riak. Riak-Cpp forces you to think about this problem up front. If you do not expect siblings, be sure to log errors when sibling resolution is encountered on your application.
 
-   The shape of a sibling-resolution handler is as the below. You will of course want this to depend on your data type.
+    The shape of a sibling-resolution handler is as the below. You will of course want this to depend on your data type.
 
         std::shared_ptr<riak::object> random_sibling_resolution (const ::riak::siblings&)
         {
@@ -39,7 +39,7 @@ To fetch or store an object using Riak-Cpp, you need to have four things set up:
             new_content->set_value("<result of sibling resolution>");
 	        return new_content;
 	    }
-
+    
     You will apply sibling-resolution immediately upon construction of the Riak client.
 
  2. **A result callback for the action you perform.** Riak-Cpp is asynchronous in all cases. As C++11 evolves, we will be able to use lambdas to shorten some cases, but for now we suggest defining functions like the below to handle your get and put responses.
