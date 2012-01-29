@@ -413,6 +413,9 @@ bool retry_or_return_cached_value (
         std::size_t bytes_received,
         const std::string& data)
 {
+    std::shared_ptr<object> no_content;
+    value_updater add_sibling = std::bind(&put_cold, bucket, k, /* object */ _1, delivery, /* put resp */ _2);
+
     if (not error) {
         assert(bytes_received != 0);
         assert(bytes_received == data.size());
@@ -425,17 +428,16 @@ bool retry_or_return_cached_value (
             } else {
                 run_get_request(bucket, k, resolve_siblings, delivery, respond_to_application);
             }
-
-            return true;
         } else {
-            std::shared_ptr<object> no_content;
             auto nonsense = riak::make_server_error(riak::errc::response_was_nonsense);
-            value_updater add_sibling = std::bind(&put_cold, bucket, k, /* object */ _1, delivery, /* put resp */ _2);
             respond_to_application(nonsense, no_content, add_sibling);
         }
     } else {
-        assert(false);
+        respond_to_application(error, no_content, add_sibling);
     }
+
+    // Always terminate the request, whether success or failure.
+    return true;
 }
 
 

@@ -185,6 +185,42 @@ TEST_F(get_with_siblings, resolving_sibling_handles_erroneous_server_reply)
 }
 
 
+TEST_F(get_with_siblings, resolving_sibling_handles_server_failure)
+{
+    client->get_object("a", "document", response_handler);
+
+    // Prepare for the get response, which in this case causes sibling resolution.
+    auto resolved_sibling = std::make_shared<object>();
+    resolved_sibling->CopyFrom(multi_value_get_response().content().Get(0));
+    EXPECT_CALL(sibling_resolution, evaluate(_)).Times(AnyNumber()).WillRepeatedly(Return(resolved_sibling));
+    std::string second_request_to_server;
+    ON_CALL(transport, deliver(_, _))
+            .WillByDefault(DoAll(
+                    SaveArg<0>(&second_request_to_server),
+                    SaveArg<1>(&send_from_server),
+                    Return(std::bind(&mock::transport::option_to_terminate_request::exercise, &closure_signal))));
+
+    // Server produces GET response (with siblings), triggering resolution and a new PUT response.
+    std::string encoded_response;
+    multi_value_get_response().SerializeToString(&encoded_response);
+    riak::message::wire_package wire_response(riak::message::code::GetResponse, encoded_response);
+    send_from_server(std::error_code(), wire_response.to_string().size(), wire_response.to_string());
+
+    // Now the server misbehaves with the PUT response.
+    if (not second_request_to_server.empty()) {
+        RpbPutReq put_request;
+        if (message::retrieve(put_request, second_request_to_server.size(), second_request_to_server)) {
+            EXPECT_CALL(response_handler_mock, execute(Eq(std::errc::connection_aborted), _, _));
+            send_from_server(std::make_error_code(std::errc::connection_aborted), 0, "");
+        } else {
+            ADD_FAILURE() << "Sibling resolution produced something other than a PUT request to the server!";
+        }
+    } else {
+        ADD_FAILURE() << "Sibling resolution produced an empty PUT request to the server!";
+    }
+}
+
+
 TEST_F(get_with_siblings, multiple_sibling_resolutions_are_correctly_handled)
 {
     client->get_object("a", "document", response_handler);
