@@ -101,7 +101,6 @@ void client::delete_object (const key& bucket, const key& k, delete_response_han
     wire_request->dispatch_via(deliver_request_);
 }
 
-
 //=============================================================================
     namespace {
 //=============================================================================
@@ -109,21 +108,21 @@ void client::delete_object (const key& bucket, const key& k, delete_response_han
 // This was introduced because VS2010 cannot std::bind to 12 argument parameters.
 struct delivery_arguments
 {
-	delivery_arguments (
+    delivery_arguments (
             const object_access_parameters& oap,
             const request_failure_parameters& rfp,
             transport::delivery_provider& delivery,
             boost::asio::io_service& ios)
-	  : access_overrides(oap)
-	  , request_failure_defaults(rfp)
-	  , deliver_request(delivery)
-	  , ios(ios)
-	{   }
-
-	const object_access_parameters& access_overrides;
-	const request_failure_parameters& request_failure_defaults;
-	transport::delivery_provider& deliver_request;
-	boost::asio::io_service& ios;
+      : access_overrides(oap)
+      , request_failure_defaults(rfp)
+      , deliver_request(delivery)
+      , ios(ios)
+    {   }
+    
+    const object_access_parameters& access_overrides;
+    const request_failure_parameters& request_failure_defaults;
+    transport::delivery_provider& deliver_request;
+    boost::asio::io_service& ios;
 };
 
 void run_get_request (
