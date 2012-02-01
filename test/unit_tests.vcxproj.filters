@@ -54,6 +54,12 @@
     <ClCompile Include="fixtures\get_and_put_client.cxx">
       <Filter>Source Files\Fixtures</Filter>
     </ClCompile>
+    <ClCompile Include="fixtures\get_with_siblings.cxx">
+      <Filter>Source Files\Fixtures</Filter>
+    </ClCompile>
+    <ClCompile Include="units\sibling_resolution.cxx">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="fixtures\deleting_client.hxx">
@@ -88,6 +94,9 @@
     </ClInclude>
     <ClInclude Include="mocks\put_request.hxx">
       <Filter>Header Files\Mocks</Filter>
+    </ClInclude>
+    <ClInclude Include="fixtures\get_with_siblings.hxx">
+      <Filter>Header Files\Fixtures</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

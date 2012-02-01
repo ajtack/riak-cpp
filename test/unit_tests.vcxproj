@@ -85,7 +85,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_WIN32_WINDOWS=0x0501;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_WIN32_WINDOWS=0x0501;not=!;and=&amp;&amp;;or=||;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <WarningLevel>Level2</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
@@ -134,17 +134,20 @@
     <ClCompile Include="fixtures\deleting_client.cxx" />
     <ClCompile Include="fixtures\getting_client.cxx" />
     <ClCompile Include="fixtures\get_and_put_client.cxx" />
+    <ClCompile Include="fixtures\get_with_siblings.cxx" />
     <ClCompile Include="fixtures\riak-client-mocked-for-two-requests.cxx" />
     <ClCompile Include="fixtures\riak-client-with-mocked-transport.cxx" />
     <ClCompile Include="units\delete_responses.cxx" />
     <ClCompile Include="units\get_responses.cxx" />
     <ClCompile Include="units\main.cxx" />
     <ClCompile Include="units\put_responses.cxx" />
+    <ClCompile Include="units\sibling_resolution.cxx" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="fixtures\deleting_client.hxx" />
     <ClInclude Include="fixtures\getting_client.hxx" />
     <ClInclude Include="fixtures\get_and_put_client.hxx" />
+    <ClInclude Include="fixtures\get_with_siblings.hxx" />
     <ClInclude Include="fixtures\riak-client-mocked-for-two-requests.hxx" />
     <ClInclude Include="fixtures\riak-client-with-mocked-transport.hxx" />
     <ClInclude Include="mocks\delete_request.hxx" />

@@ -1,10 +1,11 @@
-#include <arpa/inet.h>
 #include <riak/message.hxx>
 #include <sstream>
 #include <system_error>
 
 #ifdef _WIN32
 #include <WinSock2.h>
+#else
+#include <arpa/inet.h>
 #endif
 
 //=============================================================================
