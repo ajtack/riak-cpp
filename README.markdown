@@ -1,4 +1,4 @@
-Riak-Cpp (better name pending™) is a _work-in-progress_ asychronous [Riak](http://basho.com/products/riak-overview/) client library for advanced C++ compilers.
+Riak-Cpp (better name pending™) is an asychronous [Riak](http://basho.com/products/riak-overview/) client library for advanced C++ compilers.
 
 Requirements
 ============
@@ -83,11 +83,12 @@ With all of the above in place, we can write a simple program that fetches a val
 Implementation Status
 =====================
 
-We reiterate: This library is a work in progress. As of this moment, the following operations are supported:
+Riak-Cpp is designed for primary server applications, making key-value access the top priority. As of this moment, the following operations are supported:
  
  * Get a value
  * Delete a key
  * Store a value
+ * Automatic sibling resolution
  
 In addition, the following are supported:
 
@@ -95,7 +96,6 @@ In addition, the following are supported:
  * Timeouts for store accesses of any kind
  * Storage access paremeters (R, W, etc.) for all implemented operations.
  * Asynchronous behavior, allowing performant code
- * Automatic sibling resolution
 
 Be sure to check out the Github [Issues](http://github.com/ajtack/riak-cpp/issues) to see what's planned next for development.
 
