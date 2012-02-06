@@ -9,9 +9,9 @@ For the purpose of more rapid development, as well as hopefully a positive API e
  
     Riak uses both C++11 language features (e.g. type inference) and headers (e.g. `<chrono>`, and `std::bind` from `<functional>`). This decision was made to reduce the stringency of dependencies on Boost.
  
- * **Boost v1.46 (ish)**
+ * **Boost v1.46 (v1.47 on Windows)**
  
-    Notable libraries used include Asio, Optional and Thread. During development, Boost v1.46 is used for testing. We may reduce the requirements to earlier versions at some later point, but as of today that has not been tested.
+    Notable libraries used include Asio, Optional and Thread. During development, Boost v1.46 is used for testing. We may reduce the requirements to earlier versions at some later point, but as of today that has not been tested. Windows requires the `boost::chrono` library, not available until v1.47.
  
  * **SCons (for building)**
  
