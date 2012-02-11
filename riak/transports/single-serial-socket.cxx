@@ -67,10 +67,10 @@ class single_serial_socket::option_to_terminate_request
 {
   public:
     virtual ~option_to_terminate_request () {
-        exercise();
+        exercise(false);
     }
     
-    virtual void exercise ();
+    virtual void exercise (bool connection_is_dirty);
     
     option_to_terminate_request (
             single_serial_socket& p,
@@ -165,7 +165,7 @@ transport::option_to_terminate_request single_serial_socket::deliver (
         
         typedef single_serial_socket::option_to_terminate_request option;
         auto request_terminator = std::make_shared<option>(*this, packed_request, queue_position);
-        return std::bind(&option::exercise, request_terminator);
+        return std::bind(&option::exercise, request_terminator, _1);
     } else {
         throw std::system_error(std::make_error_code(std::errc::network_down),
                 "This single serial socket transport has been halted, and can no longer be used.");
@@ -207,6 +207,8 @@ void single_serial_socket::on_read (
         } else {
             handle_socket_error(error);
         }
+    } else {
+        // No closing of the connection: we moved on to the next request.
     }
 }
 
@@ -251,20 +253,19 @@ void single_serial_socket::connect_socket ()
 void single_serial_socket::handle_socket_error (const boost::system::error_code& error)
 {
     if (error == boost::asio::error::operation_aborted) {
-        // For this error, the request timed out at the riak::client level.
-        // Once an option to terminate has been exercised, we cannot call the handler any more.
+        // For this error, we operate under the assumption that the request terminated with a
+        // dirty connection. We need to completely kill and reconnect the socket, to avoid late
+        // replies.
         //
         active_request_.reset();
-
-        // We need to completely kill and reconnect the socket, to avoid late replies.
         socket_.shutdown(boost::asio::ip::tcp::socket::shutdown_both);
         socket_.close();
         connect_socket();
 
-        if (not shutting_down_ and not pending_requests_.empty())
+        if (not shutting_down_)
             run_next_request();
     } else {
-        // An actual error occurred, and we need to give the riak::store a chance to release us.
+        // An actual error occurred, and we need to inform the application layer.
         //
         auto handler = active_request_->second;
 #if _MSC_VER == 1600
@@ -279,10 +280,14 @@ void single_serial_socket::handle_socket_error (const boost::system::error_code&
 
 void single_serial_socket::run_next_request ()
 {
-    active_request_ = pending_requests_.front();
-    pending_requests_.pop_front();
-    auto on_write = std::bind(&single_serial_socket::on_write, this, active_request_, _1, _2);
-    asio::async_write(socket_, asio::buffer(active_request_->first), on_write);
+    if (not pending_requests_.empty()) {
+        active_request_ = pending_requests_.front();
+        pending_requests_.pop_front();
+        auto on_write = std::bind(&single_serial_socket::on_write, this, active_request_, _1, _2);
+        asio::async_write(socket_, asio::buffer(active_request_->first), on_write);
+    } else {
+        active_request_.reset();
+    }
 }
 
 
@@ -295,12 +300,17 @@ void single_serial_socket::option_to_terminate_request::dequeue_thread_safely ()
 }
 
 
-void single_serial_socket::option_to_terminate_request::exercise ()
+void single_serial_socket::option_to_terminate_request::exercise (bool connection_is_dirty)
 {
     boost::unique_lock<boost::mutex> serialize(this->mutex_);
     
     if (not exercised_) {
         if (pool_.active_request_->first == this_request_->first) {
+            if (not connection_is_dirty) {
+                boost::unique_lock<boost::mutex> serialize(pool_.mutex_);
+                if (not pool_.shutting_down_)
+                    pool_.run_next_request();
+            }
             pool_.socket_.cancel();
         } else {
             auto dequeue = std::bind(&option_to_terminate_request::dequeue_thread_safely, shared_from_this());

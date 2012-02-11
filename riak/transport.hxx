@@ -14,9 +14,13 @@ namespace riak {
  * will make no further callbacks related to the associated request, and no callback will
  * be made as part of the exercise.
  *
+ * The given boolean parameter is a "dirty" bit. It will be set to "true" if the request
+ * is being cancelled before complete and orderly termination. In all other cases, the
+ * connection used to make the request may be reused.
+ *
  * This signal must be idempotent.
  */
-typedef std::function<void()> option_to_terminate_request;
+typedef std::function<void(bool)> option_to_terminate_request;
 
 /*!
  * A callback used to deliver a response with an error code. The error code must evaluate

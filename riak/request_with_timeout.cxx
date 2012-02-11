@@ -49,7 +49,7 @@ void request_with_timeout::on_response (std::error_code error, size_t bytes_rece
     bool error_condition = (timed_out_ or error);
     if (not error_condition) {
         if (response_callback_(std::error_code(), bytes_received, raw_data)) {
-            (*terminate_request_)();
+            (*terminate_request_)(false);
             succeeded_ = true;
         } else {
             timeout_.expires_from_now(boost::posix_time::milliseconds(timeout_length_.count()));
@@ -57,7 +57,7 @@ void request_with_timeout::on_response (std::error_code error, size_t bytes_rece
             timeout_.async_wait(on_timeout);
         }
     } else {
-        (*terminate_request_)();
+        (*terminate_request_)(true);
         
         // Timeout already satisfied the response callback.
         if (not timed_out_)
