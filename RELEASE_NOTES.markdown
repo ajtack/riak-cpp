@@ -4,11 +4,13 @@ Riak-Cpp v0.1
 First versioned release of Riak-Cpp. The goal was correct key-value functionality with perfectly asynchronous requests.
 
 Supported compilers:
+
  * VS2010
  * gcc-4.4
  * gcc-4.5
 
 Supported libraries:
+
  * Boost v1.46+
  * GMock v1.5.0
  * Google Test v1.5.0
