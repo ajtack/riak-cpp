@@ -12,10 +12,13 @@ DEBDESC = "A Riak client library for use with C++11 compilers."
 # Determine platform-specific info, including whether we support this platform.
 if sys.platform == 'linux2':
     DEBARCH = os.popen('dpkg --print-architecture').read().strip()
-    if os.uname()[1] == 'ubuntu' and os.popen("cat /etc/issue.net").read().strip() == "Ubuntu 11.10":
+    platform_codename = os.popen("lsb_release -c").read().strip()
+    if platform_codename == "Codename:\toneiric":
         DEBDEPENDS = "libprotobuf-dev, libboost1.46-all-dev"
+    elif platform_codename == "Codename:\tsqueeze":
+        DEBDEPENDS = "libprotobuf-dev, libboost1.42-all-dev"
     else:
-        raise SCons.Errors.UserError, "Dependencies for your %s system are unknown." % os.popen("cat /etc/issue.net").read().strip()
+        raise SCons.Errors.UserError, "Dependencies for your %s system are unknown." % platform_codename
 else:
     raise SCons.Errors.UserError, "Packaging for %s systems has not been implemented!" % sys.platform
 
