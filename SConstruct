@@ -23,7 +23,9 @@ if ARGUMENTS.get('DEBUG') == 'yes':
     env = debug_env
 else:
     env = common_env
-    
+
+headers = Glob(library_build_path + '*.hxx') + \
+          Glob(library_build_path + 'transports/*.hxx')
 sources = Glob(library_build_path + '*.cxx') + \
           Glob(library_build_path + '*.proto') + \
           Glob(library_build_path + 'transports/*.cxx')
@@ -41,3 +43,12 @@ if 'debian' in COMMAND_LINE_TARGETS:
 
 unit_tests = SConscript('test/SConscript', variant_dir='build/test/units')
 AddPostAction(unit_tests, unit_tests[0].path)
+
+Default(library, unit_tests)
+
+#
+# Installation
+#
+prefix = '/usr/local'
+env.Alias('install', env.Install('/usr/local/lib', library))
+env.Alias('install', env.Install('/usr/local/include/riak', headers))
