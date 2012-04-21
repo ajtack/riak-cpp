@@ -119,6 +119,7 @@ single_serial_socket::single_serial_socket (
   : target_(node_address, boost::lexical_cast<std::string>(port))
   , ios_(ios)
   , socket_(ios)
+  , shutting_down_(false)
 {
     connect_socket();
 }
@@ -129,7 +130,7 @@ single_serial_socket::~single_serial_socket ()
     boost::unique_lock<boost::mutex> serialize(mutex_);
     
     // Prevent new requests from entering, so we don't race over the pending_requests_ list.
-    bool shutting_down_ = true;
+    shutting_down_ = true;
     
     // Report the shutdown to all clients.
     for (auto entry = pending_requests_.begin(); entry != pending_requests_.end(); ++entry) {
