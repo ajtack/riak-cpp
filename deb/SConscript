@@ -14,19 +14,21 @@ if sys.platform == 'linux2':
     DEBARCH = os.popen('dpkg --print-architecture').read().strip()
     platform_codename = os.popen("lsb_release -c").read().strip()
     if platform_codename == "Codename:\toneiric":
-        DEBDEPENDS = "libprotobuf-dev, libboost1.46-all-dev"
+        DEBDEPENDS = "libprotobuf-dev, libboost1.46-all-dev, libprotobuf-c0-dev"
     elif platform_codename == "Codename:\tsqueeze":
-        DEBDEPENDS = "libprotobuf-dev, libboost1.42-all-dev"
+        DEBDEPENDS = "libprotobuf-dev, libboost1.42-all-dev, libprotobuf-c0-dev"
     else:
         raise SCons.Errors.UserError, "Dependencies for your %s system are unknown." % platform_codename
 else:
     raise SCons.Errors.UserError, "Packaging for %s systems has not been implemented!" % sys.platform
 
 DEBFILES = [
-    ("usr/include/riak/riakclient.pb.h", "#build/riak/riakclient.pb.h"),
+    ("usr/include/riak/riakclient.pb.h",   "#build/riak/riakclient.pb.h"),
+    ("usr/include/riak/riakclient.pb-c.h", "#build/riak/riakclient.pb-c.h"),
 
     # TODO: Generate these automatically
     ("usr/include/riak/client.hxx",                          "#riak/client.hxx"),
+    ("usr/include/riak/client.h",                            "#riak/client.h"),
     ("usr/include/riak/error.hxx",                           "#riak/error.hxx"),
     ("usr/include/riak/core_types.hxx",                      "#riak/core_types.hxx"),
     ("usr/include/riak/message.hxx",                         "#riak/message.hxx"),

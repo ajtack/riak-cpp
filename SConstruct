@@ -4,12 +4,13 @@ library_build_path = '#build/riak/'
 VariantDir(library_build_path, 'riak')
 common_env = Environment(
         ENV = os.environ,
-        CXXFLAGS = ['--std=c++0x'],
+        CXXFLAGS = ['--std=c++0x', '-fPIC'],
         CPPPATH = ['/opt/local/include', '#', '#build/', '/usr/include'],
         LIBPATH = ['/opt/local/lib'])
 
 if ARGUMENTS.get('VERBOSE') != 'yes':
     common_env.Append(
+            CCCOMSTR =     '(compile)  $SOURCES',
             CXXCOMSTR =    '(compile)  $SOURCES',
             LINKCOMSTR =   '(link)     $TARGET',
             ARCOMSTR =     '(archive)  $TARGET',
@@ -24,16 +25,22 @@ if ARGUMENTS.get('DEBUG') == 'yes':
 else:
     env = common_env
 
-headers = Glob(library_build_path + '*.hxx') + \
+headers = Glob(library_build_path + '*.h*') + \
           Glob(library_build_path + '*.pb.h')
 transports = Glob(library_build_path + 'transports/*.hxx')
-sources = Glob(library_build_path + '*.cxx') + \
+sources = Glob(library_build_path + '*.c*') + \
           Glob(library_build_path + '*.proto') + \
           Glob(library_build_path + 'transports/*.cxx')
+
 env.Command(library_build_path + 'riakclient.pb.h', library_build_path + 'riakclient.proto', "protoc $SOURCE --cpp_out=.")
 env.Command(library_build_path + 'riakclient.pb.cc', library_build_path + 'riakclient.proto', "protoc $SOURCE --cpp_out=.")
-riak_protocol = env.Object(library_build_path + 'riakclient.pb.o', library_build_path + 'riakclient.pb.cc')
-library = env.StaticLibrary('riak', [sources, riak_protocol], build_dir=library_build_path)
+riak_protocol_cxx = env.Object(library_build_path + 'riakclient.pb.o', library_build_path + 'riakclient.pb.cc')
+
+env.Command(library_build_path + 'riakclient.pb-c.h', library_build_path + 'riakclient.proto', "protoc-c $SOURCE --c_out=.")
+env.Command(library_build_path + 'riakclient.pb-c.c', library_build_path + 'riakclient.proto', "protoc-c $SOURCE --c_out=.")
+riak_protocol_c = env.Object(library_build_path + 'riakclient.pb-c.o', library_build_path + 'riakclient.pb-c.c')
+
+library = env.StaticLibrary('riak', [sources, riak_protocol_cxx, riak_protocol_c], build_dir=library_build_path)
 
 # Unit tests are compiled and run every time the program is compiled.
 Export('env')
