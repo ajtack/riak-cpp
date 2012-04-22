@@ -25,7 +25,8 @@ else:
     env = common_env
 
 headers = Glob(library_build_path + '*.hxx') + \
-          Glob(library_build_path + 'transports/*.hxx')
+          Glob(library_build_path + '*.pb.h')
+transports = Glob(library_build_path + 'transports/*.hxx')
 sources = Glob(library_build_path + '*.cxx') + \
           Glob(library_build_path + '*.proto') + \
           Glob(library_build_path + 'transports/*.cxx')
@@ -52,3 +53,4 @@ Default(library, unit_tests)
 prefix = '/usr/local'
 env.Alias('install', env.Install('/usr/local/lib', library))
 env.Alias('install', env.Install('/usr/local/include/riak', headers))
+env.Alias('install', env.Install('/usr/local/include/riak/transports', transports))

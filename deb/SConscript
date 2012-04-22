@@ -37,7 +37,7 @@ DEBFILES = [
     ("usr/include/riak/sibling_resolution.hxx",              "#riak/sibling_resolution.hxx"),
     ("usr/include/riak/transport.hxx",                       "#riak/transport.hxx"),
     ("usr/include/riak/utilities.hxx",                       "#riak/utilities.hxx"),
-    ("usr/include/riak/transports/single-serial-socket.hxx", "#riak/transports/single-serial-socket.hxx"),
+    ("usr/include/riak/transports/single_serial_socket.hxx", "#riak/transports/single_serial_socket.hxx"),
 
     ("usr/lib/libriak.a", "#libriak.a"),
 ]
