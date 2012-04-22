@@ -2,7 +2,7 @@
 #include <boost/format.hpp>
 #include <functional>
 #include <riak/client.hxx>
-#include <riak/transports/single-serial-socket.hxx>
+#include <riak/transports/single_serial_socket.hxx>
 #include <test/tools/use-case-control.hxx>
 
 using namespace boost;

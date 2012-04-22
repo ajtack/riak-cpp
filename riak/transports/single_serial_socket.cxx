@@ -1,7 +1,7 @@
 #include <boost/asio/read.hpp>
 #include <boost/asio/write.hpp>
 #include <boost/lexical_cast.hpp>
-#include <riak/transports/single-serial-socket.hxx>
+#include <riak/transports/single_serial_socket.hxx>
 #include <system_error>
 
 namespace asio = boost::asio;

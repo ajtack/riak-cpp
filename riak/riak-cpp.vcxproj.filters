@@ -65,7 +65,7 @@
     <ClInclude Include="transport.hxx">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="transports\single-serial-socket.hxx">
+    <ClInclude Include="transports\single_serial_socket.hxx">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="utilities.hxx">

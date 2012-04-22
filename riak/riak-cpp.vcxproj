@@ -120,7 +120,7 @@
     <ClInclude Include="response_handlers.hxx" />
     <ClInclude Include="sibling_resolution.hxx" />
     <ClInclude Include="transport.hxx" />
-    <ClInclude Include="transports\single-serial-socket.hxx" />
+    <ClInclude Include="transports\single_serial_socket.hxx" />
     <ClInclude Include="utilities.hxx" />
   </ItemGroup>
   <ItemGroup>
