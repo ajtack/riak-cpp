@@ -1,4 +1,6 @@
+#include <boost/config.hpp>
 #include <cassert>
+#include <riak/compat.hxx>
 #include <riak/error.hxx>
 
 //=============================================================================
@@ -10,7 +12,7 @@ class server_error_category
       : public std::error_category
 {
   public:
-    virtual const char* name () const {
+    virtual const char* name () const RIAK_CPP_NOEXCEPT {
     	return "riak::server_error";
     }
 
