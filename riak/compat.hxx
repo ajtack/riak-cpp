@@ -11,8 +11,7 @@
 // to this keyword if it is available, and otherwise yield a blank.
 //
 #ifdef __GNUC__
-#   include <features.h>
-#   if __GNUC_PREREQ(4,6)
+#   if __GNUC__ >= 4 && __GNUC_MINOR__ >= 6
 #       define RIAK_CPP_NOEXCEPT noexcept
 #   else
 #       define RIAK_CPP_NOEXCEPT
