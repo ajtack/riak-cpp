@@ -11,3 +11,4 @@ riak/riakclient.pb.h
 *x64
 ipch
 *.vcxproj.user
+*.DS_Store
