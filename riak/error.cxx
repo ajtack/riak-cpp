@@ -2,6 +2,7 @@
 #include <cassert>
 #include <riak/compat.hxx>
 #include <riak/error.hxx>
+#include <string>
 
 //=============================================================================
 namespace riak {
