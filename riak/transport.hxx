@@ -32,14 +32,16 @@ typedef std::function<void(std::error_code, std::size_t, const std::string&)> re
  * Dispatches the given request at the next available opportunity. This function
  * may optionally return immediately, constituting asynchronous behavior.
  *
- * \param r is an opaque binary blob to be transmitted to the server.
- * \param h must always be called to indicate either failure or success, including upon
+ * \param request_data is an opaque binary blob to be transmitted to the server.
+ * \param on_result must always be called to indicate either failure or success, including upon
  *     destruction of the connection pool prior to resolution of a request. Multiple calls
  *     are permissible, and calls with empty payloads will affect timeouts. A conforming
  *     implementation will deliver std::network_reset in case the transport is destroyed
  *     before the request can be satisfied.
  */
-typedef std::function<option_to_terminate_request(const std::string&, response_handler)> delivery_provider;
+typedef std::function<option_to_terminate_request(
+		const std::string& request_data,
+		response_handler on_result)> delivery_provider;
 
 //=============================================================================
     }   // namespace transport
