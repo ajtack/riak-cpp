@@ -14,6 +14,7 @@ struct deleting_client
     typedef mock::delete_request::response_handler mock_response_handler;
 
     deleting_client ();
+    ~deleting_client ();
 
     mock_response_handler response_handler_mock;
     ::riak::delete_response_handler response_handler;

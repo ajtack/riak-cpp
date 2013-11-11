@@ -14,7 +14,7 @@ if ARGUMENTS.get('VERBOSE') != 'yes':
             LINKCOMSTR =   '(link)     $TARGET',
             ARCOMSTR =     '(archive)  $TARGET',
             RANLIBCOMSTR = '(ranlib)   $TARGET',
-            PROTOCCOMSTR = '(protobuf) $TARGET'
+            PROTOCCOMSTR = '(generate) $SOURCES'
     )
 
 debug_env = common_env.Clone(CCFLAGS = ['-O0', '-g'])
@@ -30,8 +30,9 @@ transports = Glob(library_build_path + 'transports/*.hxx')
 sources = Glob(library_build_path + '*.cxx') + \
           Glob(library_build_path + '*.proto') + \
           Glob(library_build_path + 'transports/*.cxx')
-env.Command(library_build_path + 'riakclient.pb.h', library_build_path + 'riakclient.proto', "protoc $SOURCE --cpp_out=.")
-env.Command(library_build_path + 'riakclient.pb.cc', library_build_path + 'riakclient.proto', "protoc $SOURCE --cpp_out=.")
+generate_protobuf_interfaces = Action("protoc $SOURCE --cpp_out=.", '$PROTOCCOMSTR')
+env.Command(library_build_path + 'riakclient.pb.h', library_build_path + 'riakclient.proto', generate_protobuf_interfaces)
+env.Command(library_build_path + 'riakclient.pb.cc', library_build_path + 'riakclient.proto', generate_protobuf_interfaces)
 riak_protocol = env.Object(library_build_path + 'riakclient.pb.o', library_build_path + 'riakclient.pb.cc')
 library = env.StaticLibrary('riak', [sources, riak_protocol], build_dir=library_build_path)
 

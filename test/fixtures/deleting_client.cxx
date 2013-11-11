@@ -14,6 +14,11 @@ deleting_client::deleting_client ()
   : response_handler(std::bind(&mock_response_handler::execute, &response_handler_mock, _1))
 {   }
 
+
+// Defining this explicitly speeds up compilation time.
+deleting_client::~deleting_client ()
+{   }
+
 //=============================================================================
 		}   // namespace fixture
     }   // namespace test
