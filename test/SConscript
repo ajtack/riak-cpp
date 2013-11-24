@@ -4,6 +4,7 @@ Import('library')
 compilation_units = [
 		Glob('units/*.cxx'),
 		Glob('fixtures/*.cxx'),
+		Glob('fixtures/*/*.cxx'),
 		Glob('mocks/*.cxx'),
 		Glob('mocks/transport/single_serial_socket/*.cxx')
 	]

@@ -6,13 +6,13 @@
  */
 #include <gtest/gtest.h>
 #include <riak/transports/single_serial_socket/scheduler.hxx>
-#include <test/mocks/transport/single_serial_socket/resolver.hxx>
-#include <test/mocks/transport/single_serial_socket/socket.hxx>
+#include <test/fixtures/single_socket_transport/single_serial_socket_transport_with_working_connection.hxx>
 #include <test/mocks/transport.hxx>
 #include <ostream>
 #include <boost/bind.hpp>
 
 using namespace ::testing;
+using riak::test::fixture::single_serial_socket_transport_with_working_connection;
 namespace single_serial_socket = ::riak::transport::single_serial_socket;
 namespace riak {
 	namespace mock { namespace sss = transport::single_serial_socket; }
@@ -91,18 +91,8 @@ using std::placeholders::_1;
 using std::placeholders::_2;
 using std::placeholders::_3;
 
-TEST(single_serial_socket, complete_response_delivered_correctly)
+TEST_F(single_serial_socket_transport_with_working_connection, complete_response_delivered_correctly)
 {
-	std::unique_ptr<NiceMock<mock::sss::socket>> socket(new NiceMock<mock::sss::socket>);
-	auto resolver = std::make_shared<NiceMock<mock::sss::resolver>>();
-	boost::asio::io_service ios;
-
-	// Resolve the connection to something -- we don't care.
-	auto dns_result = mock::sss::resolver::iterator::create(boost::asio::ip::tcp::endpoint(), "boo", "bear");
-	auto success = boost::system::error_code();
-	ON_CALL(*resolver, resolve(_)).WillByDefault(Return(dns_result));
-	ON_CALL(*socket, connect(_, _)).WillByDefault(SetArgReferee<1>(success));
-
 	// Return the response as anticipated.
 	const std::string expected_response = "cheesy brains!";
 	ON_CALL(*socket, async_write_some(_, _))
@@ -112,11 +102,7 @@ TEST(single_serial_socket, complete_response_delivered_correctly)
 
 	// The meat of the test!
 	mock::transport::device::response_handler handler;
-	single_serial_socket::scheduler transport(
-			"wherever", 8000, ios,
-			std::move(socket), std::static_pointer_cast<single_serial_socket::resolver>(resolver));
-	auto t = transport.deliver("what do mouse zombies like to eat?", std::bind(&mock::transport::device::response_handler::execute, &handler, _1, _2, _3));
-
+	auto t = transport->deliver("what do mouse zombies like to eat?", std::bind(&mock::transport::device::response_handler::execute, &handler, _1, _2, _3));
 	auto error_code = std::make_error_code(static_cast<std::errc>(boost::system::error_code().value()));
 	EXPECT_CALL(handler, execute(error_code, expected_response.size(), Eq(expected_response)))
 		.WillOnce(Invoke(InvokeTerminateOption(t)));
