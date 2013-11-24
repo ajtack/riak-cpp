@@ -26,10 +26,10 @@ else:
 
 headers = Glob(library_build_path + '*.hxx') + \
           Glob(library_build_path + '*.pb.h')
-transports = Glob(library_build_path + 'transports/*.hxx')
+transports = Glob(library_build_path + 'transports/*/*.hxx')
 sources = Glob(library_build_path + '*.cxx') + \
           Glob(library_build_path + '*.proto') + \
-          Glob(library_build_path + 'transports/*.cxx')
+          Glob(library_build_path + 'transports/*/*.cxx')
 generate_protobuf_interfaces = Action("protoc $SOURCE --cpp_out=.", '$PROTOCCOMSTR')
 env.Command(library_build_path + 'riakclient.pb.h', library_build_path + 'riakclient.proto', generate_protobuf_interfaces)
 env.Command(library_build_path + 'riakclient.pb.cc', library_build_path + 'riakclient.proto', generate_protobuf_interfaces)

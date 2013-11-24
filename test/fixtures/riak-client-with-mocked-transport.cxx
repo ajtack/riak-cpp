@@ -25,10 +25,10 @@ using std::placeholders::_2;
 using std::placeholders::_3;
 
 riak_client_with_mocked_transport::riak_client_with_mocked_transport ()
-  : client(::riak::make_client(std::bind(&mock::transport::deliver, &transport, _1, _2), &no_sibling_resolution, ios))
+  : client(::riak::make_client(std::bind(&mock::transport::device::deliver, &transport, _1, _2), &no_sibling_resolution, ios))
   , response_handler(std::bind(&::riak::mock::get_request::response_handler::execute, &response_handler_mock, _1, _2, _3))
 {
-    typedef mock::transport::option_to_terminate_request mock_close_option;
+    typedef mock::transport::device::option_to_terminate_request mock_close_option;
     EXPECT_CALL(transport, deliver(_, _))
             .WillOnce(DoAll(SaveArg<1>(&send_from_server), Return(std::bind(&mock_close_option::exercise, &closure_signal))));
 }

@@ -1,0 +1,39 @@
+#include <gtest/gtest.h>
+
+using namespace ::testing;
+
+//=============================================================================
+namespace riak {
+	namespace test {
+//=============================================================================
+
+TEST(logger, logging_line_delivered_entirely)
+{
+	std::ostringstream sink;
+	{
+		log_line x = new log_line(sink);
+		x << "a" << "b" << "c";
+	}
+
+	EXPECT_EQUAL("abc", sink.str());
+}
+
+TEST(logger, log_lines_delivered_in_order)
+{
+	std::ostringstream output;
+	auto the_log = new ordered_linewise_log(output);
+	{
+		log_line x = new log_line(the_log);
+		log_line y = new log_line(the_log);
+
+		x << "a";
+		y << "b";
+	}
+
+	EXPECT_EQUAL("ab", output.str());
+}
+
+//=============================================================================
+	}   // namespace test
+}   // namespace riak
+//=============================================================================

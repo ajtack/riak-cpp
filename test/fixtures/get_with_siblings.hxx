@@ -19,7 +19,7 @@ struct get_with_siblings
 
     typedef mock::get_request::response_handler mock_response_handler;
     
-    testing::NiceMock<mock::transport> transport;
+    testing::NiceMock<mock::transport::device> transport;
     mock::sibling_resolution sibling_resolution;
     boost::asio::io_service ios;
     std::shared_ptr<riak::client> client;
@@ -27,7 +27,7 @@ struct get_with_siblings
     ::riak::get_response_handler response_handler;
     
     ::riak::transport::response_handler send_from_server;
-    testing::NiceMock<mock::transport::option_to_terminate_request> closure_signal;
+    testing::NiceMock<mock::transport::device::option_to_terminate_request> closure_signal;
 };
 
 //=============================================================================

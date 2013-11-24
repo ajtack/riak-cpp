@@ -1,14 +1,11 @@
 #pragma once
-#include <boost/asio/ip/tcp.hpp>
-#include <boost/asio/streambuf.hpp>
-#include <boost/thread/mutex.hpp>
-#include <boost/thread/condition_variable.hpp>
-#include <list>
-#include <memory>
+#include <boost/asio/io_service.hpp>
+#include <string>
 #include <riak/transport.hxx>
 
 //=============================================================================
 namespace riak {
+	namespace transport {
 //=============================================================================
 
 /*!
@@ -21,5 +18,6 @@ transport::delivery_provider make_single_socket_transport (
         boost::asio::io_service& ios);
 
 //=============================================================================
+	}   // namespace transport
 }   // namespace riak
 //=============================================================================

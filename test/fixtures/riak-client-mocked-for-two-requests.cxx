@@ -23,10 +23,10 @@ using std::placeholders::_1;
 using std::placeholders::_2;
 
 riak_client_mocked_for_two_requests::riak_client_mocked_for_two_requests ()
-  : client(::riak::make_client(std::bind(&mock::transport::deliver, &transport, _1, _2), &no_sibling_resolution, ios))
+  : client(::riak::make_client(std::bind(&mock::transport::device::deliver, &transport, _1, _2), &no_sibling_resolution, ios))
 {
 	InSequence s;
-	typedef mock::transport::option_to_terminate_request mock_close_option;
+	typedef mock::transport::device::option_to_terminate_request mock_close_option;
 	EXPECT_CALL(transport, deliver(_, _))
     	    .WillOnce(DoAll(
     	    		SaveArg<0>(&received_request_1),

@@ -66,7 +66,7 @@ TEST_F(get_with_siblings, resolved_sibling_is_returned_to_server)
             .WillOnce(DoAll(
                     SaveArg<0>(&second_request_to_server),
                     SaveArg<1>(&send_from_server),
-                    Return(std::bind(&mock::transport::option_to_terminate_request::exercise, &closure_signal))));
+                    Return(std::bind(&mock::transport::device::option_to_terminate_request::exercise, &closure_signal))));
 
     // Server produces GET response
     std::string encoded_response;
@@ -102,7 +102,7 @@ TEST_F(get_with_siblings, resolved_sibling_produces_get_result)
             .WillByDefault(DoAll(
                     SaveArg<0>(&second_request_to_server),
                     SaveArg<1>(&send_from_server),
-                    Return(std::bind(&mock::transport::option_to_terminate_request::exercise, &closure_signal))));
+                    Return(std::bind(&mock::transport::device::option_to_terminate_request::exercise, &closure_signal))));
 
     // Server produces GET response
     std::string encoded_response;
@@ -155,7 +155,7 @@ TEST_F(get_with_siblings, resolving_sibling_handles_erroneous_server_reply)
             .WillByDefault(DoAll(
                     SaveArg<0>(&second_request_to_server),
                     SaveArg<1>(&send_from_server),
-                    Return(std::bind(&mock::transport::option_to_terminate_request::exercise, &closure_signal))));
+                    Return(std::bind(&mock::transport::device::option_to_terminate_request::exercise, &closure_signal))));
 
     // Server produces GET response (with siblings), triggering resolution and a new PUT response.
     std::string encoded_response;
@@ -198,7 +198,7 @@ TEST_F(get_with_siblings, resolving_sibling_handles_server_failure)
             .WillByDefault(DoAll(
                     SaveArg<0>(&second_request_to_server),
                     SaveArg<1>(&send_from_server),
-                    Return(std::bind(&mock::transport::option_to_terminate_request::exercise, &closure_signal))));
+                    Return(std::bind(&mock::transport::device::option_to_terminate_request::exercise, &closure_signal))));
 
     // Server produces GET response (with siblings), triggering resolution and a new PUT response.
     std::string encoded_response;
@@ -234,7 +234,7 @@ TEST_F(get_with_siblings, multiple_sibling_resolutions_are_correctly_handled)
             .WillByDefault(DoAll(
                     SaveArg<0>(&second_request_to_server),
                     SaveArg<1>(&send_from_server),
-                    Return(std::bind(&mock::transport::option_to_terminate_request::exercise, &closure_signal))));
+                    Return(std::bind(&mock::transport::device::option_to_terminate_request::exercise, &closure_signal))));
 
     // Server produces GET response, triggering the above sibling resolution.
     std::string encoded_response;
@@ -260,7 +260,7 @@ TEST_F(get_with_siblings, multiple_sibling_resolutions_are_correctly_handled)
                             SaveArg<0>(&third_request_to_server),
                             SaveArg<1>(&send_from_server),
                             Return(std::bind(
-                                    &mock::transport::option_to_terminate_request::exercise, &closure_signal))));
+                                    &mock::transport::device::option_to_terminate_request::exercise, &closure_signal))));
             
             // Produce the response to request #2: multi-sibling put response.
             RpbPutResp put_response;
@@ -285,7 +285,7 @@ TEST_F(get_with_siblings, multiple_sibling_resolutions_are_correctly_handled)
                                     SaveArg<0>(&fourth_request_to_server),
                                     SaveArg<1>(&send_from_server),
                                     Return(std::bind(
-                                            &mock::transport::option_to_terminate_request::exercise,
+                                            &mock::transport::device::option_to_terminate_request::exercise,
                                             &closure_signal))));
 
                     // Send the same siblings again; hope this is fine.
