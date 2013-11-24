@@ -19,6 +19,7 @@ struct errc {
     errc& operator= (uint8_t val) {
         value_ = val;
         valid_ = true;
+        return *this;
     }
     
     explicit errc (uint8_t v)
