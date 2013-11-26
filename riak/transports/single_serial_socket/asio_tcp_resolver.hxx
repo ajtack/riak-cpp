@@ -1,3 +1,4 @@
+#pragma once
 #include "resolver.hxx"
 #include <boost/asio/ip/basic_resolver.hpp>
 

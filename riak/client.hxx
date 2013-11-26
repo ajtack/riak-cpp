@@ -1,3 +1,4 @@
+#pragma once
 #include <memory>
 #include <riak/message.hxx>
 #include <riak/object_access_parameters.hxx>

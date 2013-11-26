@@ -1,3 +1,4 @@
+#pragma once
 #include "socket.hxx"
 
 namespace asio = boost::asio;
