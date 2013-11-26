@@ -65,6 +65,26 @@ class DeliverResponseMessage
 	boost::asio::io_service& ios_;
 };
 
+// in the shape of async_read_some
+class YieldError
+{
+  public:
+	YieldError (boost::system::error_code e, boost::asio::io_service& ios)
+	  : error_(e)
+	  , ios_(ios)
+	{   }
+
+	void operator() (boost::asio::streambuf& b, transport::single_serial_socket::socket::ReadHandler h) {
+		// std::bind yielded a stack overflow here.
+		std::function<void()> f = boost::bind(h, error_, 0);
+		ios_.post(f);
+	}
+
+  private:
+	boost::system::error_code error_;
+	boost::asio::io_service& ios_;
+};
+
 // in the shape of transport::response_handler
 class InvokeTerminateOption
 {
@@ -106,6 +126,24 @@ TEST_F(single_serial_socket_transport_with_working_connection, complete_response
 	auto error_code = std::make_error_code(static_cast<std::errc>(boost::system::error_code().value()));
 	EXPECT_CALL(handler, execute(error_code, expected_response.size(), Eq(expected_response)))
 		.WillOnce(Invoke(InvokeTerminateOption(t)));
+
+	ios.run();
+}
+
+
+TEST_F(single_serial_socket_transport_with_working_connection, connection_failure_errors_reported)
+{
+	// Return the response as anticipated.
+	ON_CALL(*socket, async_write_some(_, _))
+		.WillByDefault( Invoke(ReportFullBufferWritten(ios)) );
+	ON_CALL(*socket, async_read_some(_, _))
+		.WillByDefault( Invoke(YieldError(boost::asio::error::connection_reset, ios)) );
+
+	// Make sure we get this error at the handler.
+	mock::transport::device::response_handler handler;
+	auto t = transport->deliver("what do mouse zombies like to eat?", std::bind(&mock::transport::device::response_handler::execute, &handler, _1, _2, _3));
+	auto error_code = std::make_error_code(static_cast<std::errc>(boost::asio::error::connection_reset));
+	EXPECT_CALL(handler, execute(error_code, 0, "")).WillOnce(Invoke(InvokeTerminateOption(t)));
 
 	ios.run();
 }

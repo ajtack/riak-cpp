@@ -74,7 +74,7 @@ class scheduler
     void on_read (std::shared_ptr<enqueued_request>, const boost::system::error_code&, size_t);
     void on_write (std::shared_ptr<enqueued_request>, const boost::system::error_code&, size_t);
     void run_next_request ();
-    void handle_socket_error (const boost::system::error_code&);
+    void handle_socket_error (const boost::system::error_code&, boost::unique_lock<boost::mutex>);
     void connect_socket ();
     transport::option_to_terminate_request enqueue (enqueued_request&, const request_queue::iterator&);
 };

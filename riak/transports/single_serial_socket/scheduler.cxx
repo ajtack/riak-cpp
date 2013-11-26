@@ -117,7 +117,7 @@ void scheduler::on_read (
 #endif
             handler(error_code, n_read, received_bytes);
         } else {
-            handle_socket_error(error);
+            handle_socket_error(error, std::move(serialize));
         }
     } else {
         // No closing of the connection: we moved on to the next request.
@@ -137,7 +137,7 @@ void scheduler::on_write (
             auto on_read = std::bind(&scheduler::on_read, this, active_request_, _1, _2);
             socket_->async_read_some(read_buffer_, on_read);
         } else {
-            handle_socket_error(error);
+            handle_socket_error(error, std::move(serialize));
         }
     }
 }
@@ -160,8 +160,9 @@ void scheduler::connect_socket ()
 }
 
 
-void scheduler::handle_socket_error (const boost::system::error_code& error)
+void scheduler::handle_socket_error (const boost::system::error_code& error, boost::unique_lock<boost::mutex> serialized)
 {
+    assert(serialized);
     if (error == boost::asio::error::operation_aborted) {
         // For this error, we operate under the assumption that the request terminated with a
         // dirty connection. We need to completely kill and reconnect the socket, to avoid late
@@ -183,6 +184,9 @@ void scheduler::handle_socket_error (const boost::system::error_code& error)
 #else
         auto error_code = std::make_error_code(static_cast<std::errc>(error.value()));
 #endif
+
+        // The handler may (actually: should) decide to terminate the request -- it must succeed.
+        serialized.unlock();
         handler(error_code, 0, "");
     }
 }
