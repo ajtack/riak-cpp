@@ -66,6 +66,7 @@ class DeliverResponseMessage
 };
 
 // in the shape of async_read_some
+template <typename BufferType>
 class YieldError
 {
   public:
@@ -74,7 +75,7 @@ class YieldError
 	  , ios_(ios)
 	{   }
 
-	void operator() (boost::asio::streambuf& b, transport::single_serial_socket::socket::ReadHandler h) {
+	void operator() (BufferType& b, transport::single_serial_socket::socket::ReadHandler h) {
 		// std::bind yielded a stack overflow here.
 		std::function<void()> f = boost::bind(h, error_, 0);
 		ios_.post(f);
@@ -84,6 +85,9 @@ class YieldError
 	boost::system::error_code error_;
 	boost::asio::io_service& ios_;
 };
+
+typedef YieldError<boost::asio::streambuf> YieldErrorOnRead;
+typedef YieldError<const boost::asio::const_buffer> YieldErrorOnWrite;
 
 // in the shape of transport::response_handler
 class InvokeTerminateOption
@@ -131,13 +135,31 @@ TEST_F(single_serial_socket_transport_with_working_connection, complete_response
 }
 
 
-TEST_F(single_serial_socket_transport_with_working_connection, connection_failure_errors_reported)
+TEST_F(single_serial_socket_transport_with_working_connection, connection_failure_errors_reported_while_reading)
 {
-	// Return the response as anticipated.
+	// Write successfully.
 	ON_CALL(*socket, async_write_some(_, _))
 		.WillByDefault( Invoke(ReportFullBufferWritten(ios)) );
+
+	// Return an error while reading the response.
 	ON_CALL(*socket, async_read_some(_, _))
-		.WillByDefault( Invoke(YieldError(boost::asio::error::connection_reset, ios)) );
+		.WillByDefault( Invoke(YieldErrorOnRead(boost::asio::error::connection_reset, ios)) );
+
+	// Make sure we get this error at the handler.
+	mock::transport::device::response_handler handler;
+	auto t = transport->deliver("what do mouse zombies like to eat?", std::bind(&mock::transport::device::response_handler::execute, &handler, _1, _2, _3));
+	auto error_code = std::make_error_code(static_cast<std::errc>(boost::asio::error::connection_reset));
+	EXPECT_CALL(handler, execute(error_code, 0, "")).WillOnce(Invoke(InvokeTerminateOption(t)));
+
+	ios.run();
+}
+
+
+TEST_F(single_serial_socket_transport_with_working_connection, connection_failure_errors_reported_while_writing)
+{
+	// Fail to write to the socket.
+	ON_CALL(*socket, async_write_some(_, _))
+		.WillByDefault( Invoke(YieldErrorOnWrite(boost::asio::error::connection_reset, ios)) );
 
 	// Make sure we get this error at the handler.
 	mock::transport::device::response_handler handler;
