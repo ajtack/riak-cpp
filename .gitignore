@@ -13,3 +13,4 @@ ipch
 *.vcxproj.user
 *.DS_Store
 deb
+*.log

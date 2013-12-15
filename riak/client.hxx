@@ -1,5 +1,7 @@
 #pragma once
+#include <boost/log/sources/severity_channel_logger.hpp>
 #include <memory>
+#include <riak/log.hxx>
 #include <riak/message.hxx>
 #include <riak/object_access_parameters.hxx>
 #include <riak/request_failure_parameters.hxx>
@@ -41,6 +43,9 @@ class client
     const object_access_parameters access_overrides_;
     const request_failure_parameters request_failure_defaults_;
     boost::asio::io_service& ios_;
+
+    /*! Logs all riak request-related activity (identified by riak::log::channel::core). */
+    boost::log::sources::severity_channel_logger_mt<log::severity, log::channel> log_;
 
   protected:
     friend std::shared_ptr<client> make_client (

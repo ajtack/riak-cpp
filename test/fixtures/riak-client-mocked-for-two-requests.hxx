@@ -1,15 +1,17 @@
 #pragma once
 #include <boost/asio/io_service.hpp>
 #include <riak/client.hxx>
+#include <test/fixtures/logs_test_name.hxx>
 #include <test/mocks/transport.hxx>
 
 //=============================================================================
 namespace riak {
     namespace test {
+        namespace fixture {
 //=============================================================================
 
 struct riak_client_mocked_for_two_requests
-       : public ::testing::Test 
+       : public logs_test_name
 {
     riak_client_mocked_for_two_requests ();
     ~riak_client_mocked_for_two_requests ();
@@ -26,6 +28,7 @@ struct riak_client_mocked_for_two_requests
 };
 
 //=============================================================================
+        }   // namespace fixture
     }   // namespace test
 }   // namespace riak
 //=============================================================================
