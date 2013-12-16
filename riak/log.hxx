@@ -1,9 +1,15 @@
 #pragma once
 
+namespace boost {
+	namespace uuids { class uuid; }
+}
+
 //=============================================================================
 namespace riak {
 	namespace log {
 //=============================================================================
+
+typedef boost::uuids::uuid request_id_type;
 
 enum severity
 {
