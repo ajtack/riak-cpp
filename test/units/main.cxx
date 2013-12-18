@@ -33,6 +33,19 @@ basic_formatting_ostream<ch, traits>& operator<< (basic_formatting_ostream<ch, t
     return output;
 }
 
+
+template <typename ch, typename traits>
+basic_formatting_ostream<ch, traits>& operator<< (basic_formatting_ostream<ch, traits>& output, const channel& chan)
+{
+    switch (chan) {
+        case channel::core:     output << "riak/core";  break;
+        case channel::network:  output << "riak/net";   break;
+        default:                output << "riak/??";    break;
+    }
+
+    return output;
+}
+
 //=============================================================================
     }   // namespace log
 }   // namespace riak
@@ -61,7 +74,7 @@ void divert_all_logs_to_file (const std::string& filename)
          << expr::if_ (channel == riak::log::channel::core || channel == riak::log::channel::network) [
                 expr::stream
                     << "---- "
-                    << "(riak) "
+                    << '(' << channel << ") "
                     << expr::format_date_time<boost::posix_time::ptime>("TimeStamp", "%Y-%m-%d %H:%M:%S.%f ")
                     << severity << ' '
                     << '[' << request_id << ']'
