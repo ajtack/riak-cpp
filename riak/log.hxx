@@ -11,7 +11,7 @@ namespace riak {
 
 typedef boost::uuids::uuid request_id_type;
 
-enum severity
+enum class severity
 {
 	trace,
 	info,
