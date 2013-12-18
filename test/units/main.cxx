@@ -18,16 +18,16 @@ namespace riak {
 using boost::log::basic_formatting_ostream;
 
 template <typename ch, typename traits>
-basic_formatting_ostream<ch, traits>& operator<< (basic_formatting_ostream<ch, traits>& output, const riak::log::severity& level)
+basic_formatting_ostream<ch, traits>& operator<< (basic_formatting_ostream<ch, traits>& output, const severity& level)
 {
     output << std::setw(8);
 
     switch (level) {
-        case riak::log::severity::error:   output << "ERROR";   break;
-        case riak::log::severity::warning: output << "WARNING"; break;
-        case riak::log::severity::info:    output << "INFO";    break;
-        case riak::log::severity::trace:   output << "TRACE";   break;
-        default:                           output << "???";     break;
+        case severity::error:    output << "ERROR";    break;
+        case severity::warning:  output << "WARNING";  break;
+        case severity::info:     output << "INFO";     break;
+        case severity::trace:    output << "TRACE";    break;
+        default:                 output << "???";      break;
     }
 
     return output;
@@ -65,7 +65,6 @@ void divert_all_logs_to_file (const std::string& filename)
 {
     log::add_common_attributes();
     log::register_simple_formatter_factory<riak::log::request_id_type, char>("Riak/ClientRequestId");
-    log::register_simple_formatter_factory<riak::log::severity, char>("Severity");
 
     auto backend = boost::make_shared<log::sinks::text_file_backend>(log::keywords::file_name = filename);
     auto format_as_text = boost::make_shared<log::sinks::synchronous_sink<log::sinks::text_file_backend>>(backend);
@@ -77,7 +76,7 @@ void divert_all_logs_to_file (const std::string& filename)
                     << '(' << channel << ") "
                     << expr::format_date_time<boost::posix_time::ptime>("TimeStamp", "%Y-%m-%d %H:%M:%S.%f ")
                     << severity << ' '
-                    << '[' << request_id << ']'
+                    << "[r:" << request_id << ']'
             ] .else_ [
                 expr::stream << "(test) [" << expr::attr<std::string>("TestCase") << "]"
             ]
