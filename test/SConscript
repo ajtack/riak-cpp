@@ -6,7 +6,8 @@ compilation_units = [
 		Glob('fixtures/*.cxx'),
 		Glob('fixtures/*/*.cxx'),
 		Glob('mocks/*.cxx'),
-		Glob('mocks/transport/single_serial_socket/*.cxx')
+		Glob('mocks/*/*.cxx'),
+		Glob('mocks/*/*/*.cxx')
 	]
 
 unit_tests = env.Program('unit_tests', compilation_units, LIBS=[library, 'boost_log-mt', 'boost_log_setup-mt', 'boost_thread-mt', 'pthread', 'boost_system-mt', 'protobuf', 'gmock', 'gtest'])

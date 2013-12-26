@@ -85,7 +85,7 @@ struct application_request_context
         automatic_record_ostream<Logger> stream(logger.open_record(), logger);
         stream << boost::log::add_value("Riak/ClientRequestId", request_id);
 
-        return std::move(stream);
+        return stream;
     }
 
   private:
