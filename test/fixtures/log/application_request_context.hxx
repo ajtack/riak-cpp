@@ -7,21 +7,21 @@
 
 //=============================================================================
 namespace riak {
-    namespace test {
-        namespace fixture {
+	namespace test {
+		namespace fixture {
 //=============================================================================
 
 class application_request_context
-      : public ::testing::Test
+	  : public ::testing::Test
 {
   public:
-  	application_request_context ();
-  	~application_request_context ();
+	application_request_context ();
+	~application_request_context ();
 
-  	/*!
-  	 * On each call, produces a new context sharing a common set of parameters among all
-  	 * such calls.
-  	 */
+	/*!
+	 * On each call, produces a new context sharing a common set of parameters among all
+	 * such calls.
+	 */
 	riak::application_request_context new_context ();
 
   private:
@@ -41,7 +41,7 @@ class application_request_context
 };
 
 //=============================================================================
-        }   // namespace fixture
-    }   // namespace test
+		}   // namespace fixture
+	}   // namespace test
 }   // namespace riak
 //=============================================================================

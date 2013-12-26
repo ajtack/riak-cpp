@@ -13,8 +13,8 @@ class log_sink
       : public ::boost::log::sinks::sink
 {
   public:
-  	log_sink ();
-  	virtual ~log_sink ();
+	log_sink ();
+	virtual ~log_sink ();
 
 	MOCK_METHOD1(will_consume, bool(const ::boost::log::attribute_value_set&));
 	MOCK_METHOD1(consume, void(const ::boost::log::record_view&));

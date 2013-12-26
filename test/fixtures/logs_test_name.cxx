@@ -40,8 +40,8 @@ class logs_test_name::scope
 {
   public:
 	scope (const ::testing::TestInfo* test_info)
-	  : case_scope_(test_case_attribute_from(test_info))
-	  , test_scope_(test_name_attribute_from(test_info))
+	  :	case_scope_(test_case_attribute_from(test_info))
+	  ,	test_scope_(test_name_attribute_from(test_info))
 	{	}
 
   private:
@@ -51,11 +51,11 @@ class logs_test_name::scope
 
 
 logs_test_name::logs_test_name ()
-{   }
+{	}
 
 
 logs_test_name::~logs_test_name ()
-{   }
+{	}
 
 
 void logs_test_name::SetUp ()

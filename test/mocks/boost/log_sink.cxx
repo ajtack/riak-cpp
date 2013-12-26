@@ -8,13 +8,13 @@ namespace riak {
 
 // Speed up compilation.
 log_sink::log_sink ()
-  : sink(false)
-{   }
+  :	sink(false)
+{	}
 
 
 // Speed up compilation.
 log_sink::~log_sink ()
-{   }
+{	}
 
 //=============================================================================
 		}   // namespace boost

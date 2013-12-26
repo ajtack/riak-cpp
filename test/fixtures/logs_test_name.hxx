@@ -14,7 +14,7 @@ class logs_test_name
 	static bool first_test_has_run_;
 	
   public:
-  	logs_test_name ();
+	logs_test_name ();
 	virtual ~logs_test_name ();
 	virtual void SetUp ();
 	virtual void TearDown ();

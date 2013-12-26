@@ -19,8 +19,8 @@ class LogRecordContainsAttributeMatcher
 	LogRecordContainsAttributeMatcher (
 			const std::string& target_attribute_name,
 			::testing::Matcher<AttributeContents> test )
-	  : target_attribute_name_(target_attribute_name)
-	  , test_(test)
+	  :	target_attribute_name_(target_attribute_name)
+	  ,	test_(test)
 	{   }
 
 	template <typename RecordType>
