@@ -35,7 +35,18 @@ class LogRecordContainsAttributeMatcher
 				return false;
 			}
 		} else {
-			*listener << "has no logging attribute keyed by '" << target_attribute_name_ << "'.";
+			if (record.attribute_values().size() == 0) {
+				*listener << "has no log attributes at all.";
+			} else {
+				*listener << "has no logging attribute keyed by '" << target_attribute_name_ << "'. "
+						<< "Present attributes include [";
+				auto last_attribute = --record.attribute_values().end();
+				for (auto attr = record.attribute_values().begin(); attr != last_attribute; ++attr)
+					*listener << attr->first << ", ";
+
+				*listener << last_attribute->first << "]";
+			}
+
 			return false;
 		}
 	}

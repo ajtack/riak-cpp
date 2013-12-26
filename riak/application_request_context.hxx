@@ -1,4 +1,5 @@
 #pragma once
+#include <boost/log/keywords/severity.hpp>
 #include <boost/log/sources/record_ostream.hpp>
 #include <boost/log/utility/manipulators/add_value.hpp>
 #include <boost/uuid/random_generator.hpp>
@@ -82,7 +83,7 @@ struct application_request_context
     template <typename Logger>
     automatic_record_ostream<Logger> log (Logger& logger, riak::log::severity severity = riak::log::severity::info)
     {
-        automatic_record_ostream<Logger> stream(logger.open_record(), logger);
+        automatic_record_ostream<Logger> stream(logger.open_record(boost::log::keywords::severity = severity), logger);
         stream << boost::log::add_value("Riak/ClientRequestId", request_id);
 
         return stream;
