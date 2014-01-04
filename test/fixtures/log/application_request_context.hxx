@@ -1,7 +1,7 @@
 #pragma once
 #include <boost/asio/io_service.hpp>
-#include <gtest/gtest.h>
 #include <riak/application_request_context.hxx>
+#include <test/fixtures/logs_test_name.hxx>
 #include <test/mocks/boost/log_sink.hxx>
 #include <test/mocks/transport.hxx>
 
@@ -12,7 +12,7 @@ namespace riak {
 //=============================================================================
 
 class application_request_context
-	  : public ::testing::Test
+	  : public logs_test_name
 {
   public:
 	application_request_context ();

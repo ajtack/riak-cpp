@@ -9,6 +9,7 @@
 #include <boost/uuid/uuid_io.hpp>
 #include <gtest/gtest.h>
 #include <riak/log.hxx>
+#include <test/fixtures/logs_test_name.hxx>
 
 //=============================================================================
 namespace riak {
@@ -56,8 +57,10 @@ namespace {
 namespace log = boost::log;
 namespace expr = boost::log::expressions;
 
+typedef riak::test::fixture::logs_test_name test;
 BOOST_LOG_ATTRIBUTE_KEYWORD(severity, "Severity", riak::log::severity);
 BOOST_LOG_ATTRIBUTE_KEYWORD(channel, "Channel", riak::log::channel);
+BOOST_LOG_ATTRIBUTE_KEYWORD(test_channel, "Channel", test::channel);
 BOOST_LOG_ATTRIBUTE_KEYWORD(request_id, "Riak/ClientRequestId", riak::log::request_id_type);
 
 
@@ -70,17 +73,22 @@ void divert_all_logs_to_file (const std::string& filename)
     auto format_as_text = boost::make_shared<log::sinks::synchronous_sink<log::sinks::text_file_backend>>(backend);
 
     format_as_text->set_formatter( expr::stream
-         << expr::if_ (channel == riak::log::channel::core || channel == riak::log::channel::network) [
+         << expr::if_ (test_channel.or_default(test::channel::test_output) != test::channel::blank_line) [
                 expr::stream
-                    << "---- "
-                    << '(' << channel << ") "
-                    << expr::format_date_time<boost::posix_time::ptime>("TimeStamp", "%Y-%m-%d %H:%M:%S.%f ")
-                    << severity << ' '
-                    << "[r:" << request_id << ']'
+                     << expr::if_ (not channel) [
+                            expr::stream << "(test) [" << expr::attr<std::string>("TestCase") << "]"
+                        ] .else_ [
+                            expr::stream
+                                << "---- "
+                                << '(' << channel << ") "
+                                << expr::format_date_time<boost::posix_time::ptime>("TimeStamp", "%Y-%m-%d %H:%M:%S.%f ")
+                                << severity << ' '
+                                << "[r:" << request_id << ']'
+                        ]
+                     << ": " << expr::message
             ] .else_ [
-                expr::stream << "(test) [" << expr::attr<std::string>("TestCase") << "]"
+                expr::stream   // Blank line
             ]
-         << ": " << expr::message
         );
 
     log::core::get()->add_sink(format_as_text);

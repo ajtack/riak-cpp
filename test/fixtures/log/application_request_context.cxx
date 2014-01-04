@@ -1,5 +1,6 @@
 #include "application_request_context.hxx"
 #include <boost/log/core/core.hpp>
+#include <test/matchers/has_attribute.hxx>
 
 //=============================================================================
 namespace riak {
@@ -16,8 +17,14 @@ application_request_context::application_request_context ()
 {
 	boost::log::core::get()->add_sink(log_sinks_);
 
+	// For the sake of this sink, ignore test output to logs, allow everything else.
+	// (order here is important: most specific matcher must go last.)
+	//
 	using namespace ::testing;
+	typedef logs_test_name::channel channel;
 	ON_CALL(log_sinks, will_consume(_)).WillByDefault(Return(true));
+	ON_CALL(log_sinks, will_consume(HasAttribute<channel>("Channel", A<channel>())))
+			.WillByDefault(Return(false));
 }
 
 

@@ -8,24 +8,25 @@ namespace riak {
 //=============================================================================
 
 /*!
- * Accepts a \c boost::log::record_view and detects the presence (or absence) of an attached
- * attribute of the given name and type \c AttributeContents. The matcher only fires if the
- * attribute is both present and of the correct type.
+ * Accepts a \c boost::log::attributes::attribute_value_set and detects the presence (or
+ * absence) of a specific attribute of the given name and type (\c AttributeContents). The
+ * matcher only fires if the attribute is both present and of the correct type.
  */
 template <typename AttributeContents>
-class LogRecordContainsAttributeMatcher
+class HasAttributeMatcher
+      : public ::testing::MatcherInterface<const ::boost::log::attribute_value_set&>
 {
   public:
-	LogRecordContainsAttributeMatcher (
+	HasAttributeMatcher (
 			const std::string& target_attribute_name,
 			::testing::Matcher<AttributeContents> test )
 	  :	target_attribute_name_(target_attribute_name)
 	  ,	test_(test)
-	{   }
+	{	}
 
-	template <typename RecordType>
-	bool MatchAndExplain (RecordType record, ::testing::MatchResultListener* listener) const {
-		auto attribute = record.attribute_values()[target_attribute_name_];
+	bool MatchAndExplain (const ::boost::log::attribute_value_set& values, ::testing::MatchResultListener* listener) const
+	{
+		auto attribute = values[target_attribute_name_];
 		if (!! attribute) {
 			*listener << "has a logging attribute '" << target_attribute_name_ << "' and it ";
 			if (auto extracted_value = boost::log::extract<AttributeContents>(attribute)) {
@@ -35,13 +36,13 @@ class LogRecordContainsAttributeMatcher
 				return false;
 			}
 		} else {
-			if (record.attribute_values().size() == 0) {
+			if (values.size() == 0) {
 				*listener << "has no log attributes at all.";
 			} else {
 				*listener << "has no logging attribute keyed by '" << target_attribute_name_ << "'. "
 						<< "Present attributes include [";
-				auto last_attribute = --record.attribute_values().end();
-				for (auto attr = record.attribute_values().begin(); attr != last_attribute; ++attr)
+				auto last_attribute = --values.end();
+				for (auto attr = values.begin(); attr != last_attribute; ++attr)
 					*listener << attr->first << ", ";
 
 				*listener << last_attribute->first << "]";
@@ -69,23 +70,22 @@ class LogRecordContainsAttributeMatcher
 
 
 /*!
- * Accepts a \c boost::log::record_view and matches where the record is decorated with an
+ * Accepts a \c boost::log::attributes::attribute_value_set and matches where it finds
  * attribute keyed by \ref target_attribute_name, the value of which matches \ref test.
  * For example, if your tests have a wired \ref boost::log::sinks::sink instance \c log_sink,
- * you can use this helper to verify that all records are marked with a severity:
+ * you can use this helper to validate which records are logged.
  * \code
  *	ON_CALL(log_sinks, will_consume(_)).WillByDefault(Return(true));
- *	EXPECT_CALL(log_sink, consume(Not(LogRecordContainingAttribute("Severity", Eq(boost::log::trivial::info)))))
+ *	EXPECT_CALL(log_sink, will_consume(HasAttribute("Severity", Eq(boost::log::trivial::error))))
  *      .Times(0);
  * \endcode
  */
 template <typename AttributeContents>
-::testing::PolymorphicMatcher<LogRecordContainsAttributeMatcher<AttributeContents>> LogRecordContainsAttribute (
+::testing::Matcher<const ::boost::log::attribute_value_set&> HasAttribute (
 		const std::string& target_attribute_name,
 		::testing::Matcher<AttributeContents> test )
 {
-	return ::testing::MakePolymorphicMatcher(
-			LogRecordContainsAttributeMatcher<AttributeContents>(target_attribute_name, test) );
+	return ::testing::MakeMatcher(new HasAttributeMatcher<AttributeContents>(target_attribute_name, test));
 }
 
 //=============================================================================

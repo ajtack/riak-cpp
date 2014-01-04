@@ -51,6 +51,7 @@ class logs_test_name::scope
 
 
 logs_test_name::logs_test_name ()
+  :	logger_(channel::test_output)
 {	}
 
 
@@ -63,17 +64,17 @@ void logs_test_name::SetUp ()
 	auto current_test = ::testing::UnitTest::GetInstance()->current_test_info();
 	scope_.reset(new scope(current_test));
 	if (first_test_has_run_)
-		BOOST_LOG_TRIVIAL(trace);
+	 	BOOST_LOG_CHANNEL(logger_, channel::blank_line);
 
-	BOOST_LOG_TRIVIAL(info) << "Beginning test " << current_test->name() << " ...";
-	BOOST_LOG_TRIVIAL(trace) << "==========================================================";
+	BOOST_LOG_CHANNEL(logger_, channel::test_log_decoration) << "Beginning test " << current_test->name() << " ...";
+	BOOST_LOG_CHANNEL(logger_, channel::test_log_decoration) << "==========================================================";
 }
 
 
 void logs_test_name::TearDown ()
 {
-	BOOST_LOG_TRIVIAL(trace) << "----------------------------------------------------------";
-	BOOST_LOG_TRIVIAL(info) << "Test Complete!";
+	BOOST_LOG_CHANNEL(logger_, channel::test_log_decoration) << "----------------------------------------------------------";
+	BOOST_LOG_CHANNEL(logger_, channel::test_log_decoration) << "Test Complete!";
 	scope_.reset();
 	first_test_has_run_ = true;
 }
