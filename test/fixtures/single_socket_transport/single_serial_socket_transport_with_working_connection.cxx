@@ -25,7 +25,7 @@ single_serial_socket_transport_with_working_connection::single_serial_socket_tra
 
 	// Succeed in connecting every time.
 	auto success = boost::system::error_code();
-	ON_CALL(*socket, connect(_, _)).WillByDefault(SetArgReferee<1>(success));
+	ON_CALL(*socket, connect(_, _)).WillByDefault(DoAll(SetArgReferee<1>(success), Return(success)));
 
 	// Remember the physical pointer to this socket -- the pool must own the canonical (unique_ptr) pointer.
 	std::unique_ptr<NiceMock<mock::sss::socket>> socket_ptr(socket);
