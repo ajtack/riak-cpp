@@ -30,7 +30,7 @@ class application_request_context
 	::testing::StrictMock<mock::transport::device> transport_;
 	boost::asio::io_service ios_;
 
-	boost::shared_ptr<::testing::NiceMock<mock::boost::log_sink>> log_sinks_;
+	boost::shared_ptr< ::testing::NiceMock<mock::boost::log_sink>> log_sinks_;
 
   public:
 	/*!
