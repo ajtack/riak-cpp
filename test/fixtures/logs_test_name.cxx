@@ -51,7 +51,7 @@ class logs_test_name::scope
 
 
 logs_test_name::logs_test_name ()
-  :	logger_(channel::test_output)
+  :	logger_(test::log::channel::test_output)
 {	}
 
 
@@ -61,6 +61,7 @@ logs_test_name::~logs_test_name ()
 
 void logs_test_name::SetUp ()
 {
+	using test::log::channel;
 	auto current_test = ::testing::UnitTest::GetInstance()->current_test_info();
 	scope_.reset(new scope(current_test));
 	if (first_test_has_run_)
@@ -73,6 +74,7 @@ void logs_test_name::SetUp ()
 
 void logs_test_name::TearDown ()
 {
+	using test::log::channel;
 	BOOST_LOG_CHANNEL(logger_, channel::test_log_decoration) << "----------------------------------------------------------";
 	BOOST_LOG_CHANNEL(logger_, channel::test_log_decoration) << "Test Complete!";
 	scope_.reset();

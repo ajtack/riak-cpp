@@ -2,6 +2,7 @@
 #include <boost/log/sources/channel_logger.hpp>
 #include <gtest/gtest.h>
 #include <memory>
+#include <test/fixtures/log/test_channel.hxx>
 
 //=============================================================================
 namespace riak {
@@ -20,17 +21,11 @@ class logs_test_name
 	virtual void SetUp ();
 	virtual void TearDown ();
 
-	enum class channel
-	{	
-		test_output,
-		test_log_decoration,
-		blank_line,
-	};
-
   private:
 	class scope;
 	std::unique_ptr<scope> scope_;
-	boost::log::sources::channel_logger<channel> logger_;
+
+	boost::log::sources::channel_logger<::riak::test::log::channel> logger_;
 };
 
 //=============================================================================

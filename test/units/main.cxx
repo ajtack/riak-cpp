@@ -57,10 +57,9 @@ namespace {
 namespace log = boost::log;
 namespace expr = boost::log::expressions;
 
-typedef riak::test::fixture::logs_test_name test;
 BOOST_LOG_ATTRIBUTE_KEYWORD(severity, "Severity", riak::log::severity);
-BOOST_LOG_ATTRIBUTE_KEYWORD(channel, "Channel", riak::log::channel);
-BOOST_LOG_ATTRIBUTE_KEYWORD(test_channel, "Channel", test::channel);
+BOOST_LOG_ATTRIBUTE_KEYWORD(client_log_channel, "Channel", riak::log::channel);
+BOOST_LOG_ATTRIBUTE_KEYWORD(test_log_channel, "Channel", riak::test::log::channel);
 BOOST_LOG_ATTRIBUTE_KEYWORD(request_id, "Riak/ClientRequestId", riak::log::request_id_type);
 
 
@@ -72,15 +71,16 @@ void divert_all_logs_to_file (const std::string& filename)
     auto backend = boost::make_shared<log::sinks::text_file_backend>(log::keywords::file_name = filename);
     auto format_as_text = boost::make_shared<log::sinks::synchronous_sink<log::sinks::text_file_backend>>(backend);
 
+    namespace test = riak::test;
     format_as_text->set_formatter( expr::stream
-         << expr::if_ (test_channel.or_default(test::channel::test_output) != test::channel::blank_line) [
+         << expr::if_ (test_log_channel.or_default(test::log::channel::test_output) != test::log::channel::blank_line) [
                 expr::stream
-                     << expr::if_ (not channel) [
+                     << expr::if_ (not client_log_channel) [
                             expr::stream << "(test) [" << expr::attr<std::string>("TestCase") << "]"
                         ] .else_ [
                             expr::stream
                                 << "---- "
-                                << '(' << channel << ") "
+                                << '(' << client_log_channel << ") "
                                 << expr::format_date_time<boost::posix_time::ptime>("TimeStamp", "%Y-%m-%d %H:%M:%S.%f ")
                                 << severity << ' '
                                 << "[r:" << request_id << ']'

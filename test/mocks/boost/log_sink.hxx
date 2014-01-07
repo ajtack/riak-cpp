@@ -1,3 +1,4 @@
+#pragma once
 #include <boost/log/attributes/attribute_value_set.hpp>
 #include <boost/log/core/record_view.hpp>
 #include <boost/log/sinks/sink.hpp>

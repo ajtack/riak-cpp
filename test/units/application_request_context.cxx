@@ -22,6 +22,7 @@ TEST_F(application_request_context, yields_unique_request_ids_as_log_line_attrib
 	riak::log::request_id_type id_1, id_2;
 
 	{	InSequence s;
+		namespace log = riak::log;
 
 		EXPECT_CALL(log_sinks, consume(LogRecordAttributeSet(HasAttribute("Riak/ClientRequestId", A<log::request_id_type>()))))
 			.WillOnce(SaveLogAttribute("Riak/ClientRequestId", &id_1));
