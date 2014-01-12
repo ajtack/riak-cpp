@@ -43,7 +43,7 @@ const std::string clean_put_reply ()
 TEST_F(get_and_put_client, put_for_cold_object_with_well_formed_response_is_successful)
 {
     ::riak::value_updater update_value;
-    client->get_object("a", "document", get_response_handler);
+    client.get_object("a", "document", get_response_handler);
 
     // Respond to the read-before-write GET.
     EXPECT_CALL(get_response_handler_mock, execute(
@@ -69,7 +69,7 @@ TEST_F(get_and_put_client, put_for_cold_object_with_well_formed_response_is_succ
 TEST_F(get_and_put_client, client_survives_long_nonsense_reply_to_cold_put)
 {
     ::riak::value_updater update_value;
-    client->get_object("a", "document", get_response_handler);
+    client.get_object("a", "document", get_response_handler);
 
     // Respond to the read-before-write GET.
     EXPECT_CALL(get_response_handler_mock, execute(
@@ -97,7 +97,7 @@ TEST_F(get_and_put_client, client_survives_long_nonsense_reply_to_cold_put)
 TEST_F(get_and_put_client, client_survives_extra_data_in_cold_put_response)
 {
     ::riak::value_updater update_value;
-    client->get_object("a", "document", get_response_handler);
+    client.get_object("a", "document", get_response_handler);
 
     // Respond to the read-before-write GET.
     EXPECT_CALL(get_response_handler_mock, execute(
@@ -124,7 +124,7 @@ TEST_F(get_and_put_client, client_survives_extra_data_in_cold_put_response)
 TEST_F(get_and_put_client, client_accepts_well_formed_put_response_in_parts)
 {
     ::riak::value_updater update_value;
-    client->get_object("a", "document", get_response_handler);
+    client.get_object("a", "document", get_response_handler);
 
     // Respond to the read-before-write GET.
     EXPECT_CALL(get_response_handler_mock, execute(
@@ -161,7 +161,7 @@ TEST_F(get_and_put_client, client_accepts_well_formed_put_response_in_parts)
 TEST_F(get_and_put_client, client_correctly_delivers_put_reply_with_vector_clock)
 {
     ::riak::value_updater update_value;
-    client->get_object("a", "document", get_response_handler);
+    client.get_object("a", "document", get_response_handler);
 
     // Build a response with a value and vector clock
     RpbGetResp original_get_response;

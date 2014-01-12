@@ -13,10 +13,9 @@ using std::placeholders::_2;
 using std::placeholders::_3;
 
 get_with_siblings::get_with_siblings ()
-  : client(::riak::make_client(
-            std::bind(&mock::transport::device::deliver, &transport, _1, _2),
-            std::bind(&mock::sibling_resolution::evaluate, &sibling_resolution, _1),
-            ios))
+  : client(std::bind(&mock::transport::device::deliver, &transport, _1, _2),
+           std::bind(&mock::sibling_resolution::evaluate, &sibling_resolution, _1),
+           ios)
   , response_handler(std::bind(&::riak::mock::get_request::response_handler::execute, &response_handler_mock, _1, _2, _3))
 {
     typedef mock::transport::device::option_to_terminate_request mock_close_option;

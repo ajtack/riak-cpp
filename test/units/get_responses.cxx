@@ -21,7 +21,7 @@ RpbGetResp empty_get_response;
 
 TEST_F(getting_client, client_survives_long_nonsense_reply_to_get)
 {
-    client->get_object("a", "document", response_handler);
+    client.get_object("a", "document", response_handler);
     
     // Expect no calls, as this particular garbage suggests a longer reply; the request
     // would eventually time out.
@@ -35,7 +35,7 @@ TEST_F(getting_client, client_survives_long_nonsense_reply_to_get)
 
 TEST_F(getting_client, client_survives_wrong_code_reply_to_get)
 {
-    client->get_object("a", "document", response_handler);
+    client.get_object("a", "document", response_handler);
 
     RpbGetResp nonempty_get_response;
     nonempty_get_response.add_content()->set_value("Son of a gun!");
@@ -56,7 +56,7 @@ TEST_F(getting_client, client_survives_wrong_code_reply_to_get)
 
 TEST_F(getting_client, client_survives_extra_data_in_empty_get_response)
 {
-    client->get_object("a", "document", response_handler);
+    client.get_object("a", "document", response_handler);
 
     std::string response_with_extra;
     empty_get_response.SerializeToString(&response_with_extra);
@@ -75,7 +75,7 @@ TEST_F(getting_client, client_survives_extra_data_in_empty_get_response)
 
 TEST_F(getting_client, client_accepts_nonempty_get_response)
 {
-    client->get_object("a", "document", response_handler);
+    client.get_object("a", "document", response_handler);
 
     RpbGetResp nonempty_get_response;
     nonempty_get_response.add_content()->set_value("Son of a gun!");
@@ -96,7 +96,7 @@ TEST_F(getting_client, client_accepts_nonempty_get_response)
 
 TEST_F(getting_client, client_accepts_empty_RbpGetResp)
 {
-    client->get_object("a", "document", response_handler);
+    client.get_object("a", "document", response_handler);
     
     EXPECT_CALL(closure_signal, exercise());
     EXPECT_CALL(response_handler_mock, execute(
@@ -113,7 +113,7 @@ TEST_F(getting_client, client_accepts_empty_RbpGetResp)
 
 TEST_F(getting_client, client_accepts_well_formed_response_in_parts)
 {
-    client->get_object("a", "document", response_handler);
+    client.get_object("a", "document", response_handler);
     
     RpbGetResp nonempty_get_response;
     nonempty_get_response.add_content()->set_value("Son of a gun!");

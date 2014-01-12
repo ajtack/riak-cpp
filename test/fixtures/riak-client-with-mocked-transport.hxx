@@ -22,7 +22,7 @@ struct riak_client_with_mocked_transport
     mock::transport::device transport;
     mock::sibling_resolution sibling_resolution;
     boost::asio::io_service ios;
-    std::shared_ptr<riak::client> client;
+    riak::client client;
     mock_response_handler response_handler_mock;
     ::riak::get_response_handler response_handler;
 

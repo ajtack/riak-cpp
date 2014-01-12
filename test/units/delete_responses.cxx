@@ -19,7 +19,7 @@ namespace riak {
 
 TEST_F(deleting_client, client_survives_nonsense_reply_to_unmap)
 {
-    client->delete_object("a", "document", response_handler);
+    client.delete_object("a", "document", response_handler);
 
     // Expect no calls, as this particular garbage suggests a longer reply; the request
     // would eventually time out.
@@ -33,7 +33,7 @@ TEST_F(deleting_client, client_survives_nonsense_reply_to_unmap)
 
 TEST_F(deleting_client, client_survives_wrong_code_reply_to_unmap)
 {
-    client->delete_object("a", "document", response_handler);
+    client.delete_object("a", "document", response_handler);
 
     EXPECT_CALL(closure_signal, exercise());
     EXPECT_CALL(response_handler_mock, execute(Eq(riak::make_server_error(riak::errc::response_was_nonsense))));
@@ -45,7 +45,7 @@ TEST_F(deleting_client, client_survives_wrong_code_reply_to_unmap)
 
 TEST_F(deleting_client, client_survives_trailing_data_with_RpbDelResp)
 {
-    client->delete_object("a", "document", response_handler);
+    client.delete_object("a", "document", response_handler);
 
     EXPECT_CALL(closure_signal, exercise());
     EXPECT_CALL(response_handler_mock, execute(Eq(riak::make_server_error(riak::errc::no_error))));
@@ -57,7 +57,7 @@ TEST_F(deleting_client, client_survives_trailing_data_with_RpbDelResp)
 
 TEST_F(deleting_client, client_accepts_well_formed_RbpDelResp)
 {
-    client->delete_object("a", "document", response_handler);
+    client.delete_object("a", "document", response_handler);
     
     EXPECT_CALL(closure_signal, exercise());
     EXPECT_CALL(response_handler_mock, execute(Eq(riak::make_server_error(riak::errc::no_error))));
@@ -71,7 +71,7 @@ TEST_F(deleting_client, client_accepts_well_formed_RbpDelResp)
 TEST_F(deleting_client, client_accepts_well_formed_unmap_response_in_parts)
 {
     EXPECT_CALL(sibling_resolution, evaluate(_)).Times(0);
-    client->delete_object("a", "document", response_handler);
+    client.delete_object("a", "document", response_handler);
     
     std::string response_data;
     std::string canned_delete_response = "";   // Deletes are only message code responses.

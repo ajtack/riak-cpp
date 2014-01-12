@@ -20,21 +20,9 @@ const request_failure_parameters client::failure_defaults = request_failure_para
     .with_retries_permitted(1);
 
 
-std::shared_ptr<client> make_client (
-        transport::delivery_provider d,
-        sibling_resolution sr,
-        boost::asio::io_service& ios,
-        const request_failure_parameters& failure_defaults,
-        const object_access_parameters& access_override_defaults)
-{
-    std::shared_ptr<client> ptr(new client(d, sr, ios, failure_defaults, access_override_defaults));
-    return ptr;
-}
-
-
 client::client (
-        transport::delivery_provider& d,
-        sibling_resolution sr,
+        const transport::delivery_provider&& d,
+        const sibling_resolution&& sr,
         boost::asio::io_service& ios,
         const request_failure_parameters& fp,
         const object_access_parameters& ao)

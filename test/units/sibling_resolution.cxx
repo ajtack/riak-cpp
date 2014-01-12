@@ -37,7 +37,7 @@ RpbGetResp multi_value_get_response ()
 
 TEST_F(get_with_siblings, getting_siblinged_value_triggers_resolution)
 {
-    client->get_object("a", "document", response_handler);
+    client.get_object("a", "document", response_handler);
 
     // Handle the GET response.
     auto resolved_sibling = std::make_shared<object>();
@@ -55,7 +55,7 @@ TEST_F(get_with_siblings, getting_siblinged_value_triggers_resolution)
 
 TEST_F(get_with_siblings, resolved_sibling_is_returned_to_server)
 {
-    client->get_object("a", "document", response_handler);
+    client.get_object("a", "document", response_handler);
 
     // Handle the GET response.
     auto resolved_sibling = std::make_shared<object>();
@@ -91,7 +91,7 @@ TEST_F(get_with_siblings, resolved_sibling_is_returned_to_server)
 
 TEST_F(get_with_siblings, resolved_sibling_produces_get_result)
 {
-    client->get_object("a", "document", response_handler);
+    client.get_object("a", "document", response_handler);
 
     // Handle the GET response.
     auto resolved_sibling = std::make_shared<object>();
@@ -144,7 +144,7 @@ TEST_F(get_with_siblings, resolved_sibling_produces_get_result)
 
 TEST_F(get_with_siblings, resolving_sibling_handles_erroneous_server_reply)
 {
-    client->get_object("a", "document", response_handler);
+    client.get_object("a", "document", response_handler);
 
     // Prepare for the get response, which in this case causes sibling resolution.
     auto resolved_sibling = std::make_shared<object>();
@@ -187,7 +187,7 @@ TEST_F(get_with_siblings, resolving_sibling_handles_erroneous_server_reply)
 
 TEST_F(get_with_siblings, resolving_sibling_handles_server_failure)
 {
-    client->get_object("a", "document", response_handler);
+    client.get_object("a", "document", response_handler);
 
     // Prepare for the get response, which in this case causes sibling resolution.
     auto resolved_sibling = std::make_shared<object>();
@@ -223,7 +223,7 @@ TEST_F(get_with_siblings, resolving_sibling_handles_server_failure)
 
 TEST_F(get_with_siblings, multiple_sibling_resolutions_are_correctly_handled)
 {
-    client->get_object("a", "document", response_handler);
+    client.get_object("a", "document", response_handler);
 
     // Handle the GET response.
     auto first_resolved_sibling = std::make_shared<object>();
