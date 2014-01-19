@@ -48,6 +48,9 @@ class client
     boost::log::sources::severity_channel_logger_mt<log::severity, log::channel> log_;
 
   protected:
+    class request_runner;
+    friend class request_runner;
+
     friend std::shared_ptr<client> make_client (
             transport::delivery_provider,
             sibling_resolution sr,

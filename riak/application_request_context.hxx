@@ -28,16 +28,12 @@ struct application_request_context
 {
 	application_request_context (
 			const object_access_parameters& oap,
-			const request_failure_parameters& rfp,
-			transport::delivery_provider& transport,
-			boost::asio::io_service& ios);
+			const request_failure_parameters& rfp);
 
 	~application_request_context ();
 	
 	const object_access_parameters access_overrides;
 	const request_failure_parameters request_failure_defaults;
-	transport::delivery_provider deliver_request;
-	boost::asio::io_service& ios;
 	boost::uuids::uuid request_id;
 
 	/*!
@@ -81,7 +77,7 @@ struct application_request_context
 	};
 
 	template <typename Logger>
-	automatic_record_ostream<Logger> log (Logger& logger, riak::log::severity severity = riak::log::severity::info)
+	automatic_record_ostream<Logger> log (Logger& logger, riak::log::severity severity = riak::log::severity::info) const
 	{
 		automatic_record_ostream<Logger> stream(logger.open_record(boost::log::keywords::severity = severity), logger);
 		stream << boost::log::add_value("Riak/ClientRequestId", request_id);
