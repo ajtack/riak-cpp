@@ -7,6 +7,8 @@
 #include <gtest/gtest.h>
 #include <riak/message.hxx>
 #include <test/fixtures/deleting_client.hxx>
+#include <test/matchers/has_attribute.hxx>
+#include <test/matchers/log_record_attribute_set.hxx>
 #include <system_error>
 
 using namespace ::testing;
@@ -38,6 +40,11 @@ TEST_F(deleting_client, client_survives_wrong_code_reply_to_unmap)
     EXPECT_CALL(closure_signal, exercise());
     EXPECT_CALL(response_handler_mock, execute(Eq(riak::make_server_error(riak::errc::response_was_nonsense))));
     EXPECT_CALL(sibling_resolution, evaluate(_)).Times(0);
+
+    // Require at least one error line in logs -- this is highly irregular behavior.
+    using riak::log::severity;
+    EXPECT_CALL(log_sinks, consume(LogRecordAttributeSet(HasAttribute<severity>("Severity", Eq(severity::error)))));
+
     riak::message::wire_package bad_reply(riak::message::code::GetResponse, "whatever");
     send_from_server(std::error_code(), bad_reply.to_string().size(), bad_reply.to_string());
 }

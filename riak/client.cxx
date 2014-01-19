@@ -155,10 +155,12 @@ bool client::request_runner::accept_delete_response (
         const std::string& data)
 {
     if (not error) {
-        if (message::verify_code(message::code::DeleteResponse, bytes_received, data))
+        if (message::verify_code(message::code::DeleteResponse, bytes_received, data)) {
             respond_to_application(riak::make_server_error());
-        else
+        } else {
+            log(log::severity::error) << "Received a non-delete reply to this delete request (or message could not be decoded).";
             respond_to_application(riak::make_server_error(riak::errc::response_was_nonsense));
+        }
     } else {
         respond_to_application(error);
     }
@@ -293,6 +295,7 @@ bool client::request_runner::accept_get_response (
                 respond_to_application(riak::make_server_error(), no_content, add_content);
             }
         } else {
+            log(log::severity::error) << "Received a reply from the server that could not be decoded.";
             tell_application_reply_was_nonsense();
         }
     } else {
