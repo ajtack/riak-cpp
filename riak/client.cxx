@@ -86,6 +86,12 @@ class client::request_runner
 
     #undef KV_COMMON_PARAMS
 
+    bool accept_put_response (
+            put_response_handler respond_to_application,
+            const std::error_code& error,
+            std::size_t bytes_received,
+            const std::string& data);
+
     bool accept_delete_response (
             delete_response_handler respond_to_application,
             const std::error_code& error,
@@ -156,12 +162,13 @@ bool client::request_runner::accept_delete_response (
 {
     if (not error) {
         if (message::verify_code(message::code::DeleteResponse, bytes_received, data)) {
-            respond_to_application(riak::make_server_error());
+            respond_to_application(riak::make_error_code());
         } else {
             log(log::severity::error) << "Received a non-delete reply to this delete request (or message could not be decoded).";
-            respond_to_application(riak::make_server_error(riak::errc::response_was_nonsense));
+            respond_to_application(riak::make_error_code(communication_failure::unparseable_response));
         }
     } else {
+        log(log::severity::error) << "Request failed: " << error.message();
         respond_to_application(error);
     }
 
@@ -265,8 +272,7 @@ bool client::request_runner::accept_get_response (
     // A possible response in several cases.
     std::shared_ptr<object> no_content;
     value_updater no_value_updater;
-    auto nonsense = riak::make_server_error(riak::errc::response_was_nonsense);
-    auto tell_application_reply_was_nonsense = std::bind(respond_to_application, nonsense, no_content, no_value_updater);
+    auto report_error = std::bind(respond_to_application, _1, no_content, no_value_updater);
 
     if (not error) {
         assert(bytes_received != 0);
@@ -278,28 +284,29 @@ bool client::request_runner::accept_get_response (
                 if (response.has_vclock()) {
                     resolve_siblings_and_put(bucket, k, resolve_siblings, response, respond_to_application);
                 } else {
-                    tell_application_reply_was_nonsense();
+                    report_error(communication_failure::inappropriate_response_content);
                 }
             } else if (response.content_size() == 1) {
                 if (response.has_vclock()) {
                     value_updater update_content = std::bind(&self::put_with_vclock, shared_from_this(),
                             bucket, k, response.vclock(), _1 /* object */, _2 /* response handler */);
                     std::shared_ptr<object> the_value(response.mutable_content()->ReleaseLast());
-                    respond_to_application(riak::make_server_error(), the_value, update_content);
+                    respond_to_application(riak::make_error_code(), the_value, update_content);
                 } else {
-                    tell_application_reply_was_nonsense();
+                    report_error(communication_failure::inappropriate_response_content);
                 }
             } else {
                 value_updater add_content = std::bind(&self::put_with_vclock, shared_from_this(),
                         bucket, k, boost::none, _1 /* object */, _2 /* response handler */);
-                respond_to_application(riak::make_server_error(), no_content, add_content);
+                respond_to_application(riak::make_error_code(), no_content, add_content);
             }
         } else {
             log(log::severity::error) << "Received a reply from the server that could not be decoded.";
-            tell_application_reply_was_nonsense();
+            report_error(communication_failure::unparseable_response);
         }
     } else {
-        respond_to_application(error, no_content, no_value_updater);
+        log(log::severity::error) << "Request failed: " << error.message();
+        report_error(error);
     }
 
     // Always terminate the request, whether success or failure.
@@ -352,12 +359,12 @@ bool client::request_runner::return_successfully_resolved_sibling_or_retry (
                 value_updater put_new_value = std::bind(&self::put_with_vclock, shared_from_this(),
                         bucket, k, response.vclock(),
                         _1 /* new value */, _2 /* response_handler */);
-                respond_to_application(riak::make_server_error(), cached_object, put_new_value);
+                respond_to_application(riak::make_error_code(), cached_object, put_new_value);
             } else {
                 run_get_request(bucket, k, resolve_siblings, respond_to_application);
             }
         } else {
-            auto nonsense = riak::make_server_error(riak::errc::response_was_nonsense);
+            auto nonsense = riak::make_error_code(communication_failure::unparseable_response);
             respond_to_application(nonsense, no_content, add_sibling);
         }
     } else {
@@ -384,7 +391,7 @@ void client::request_runner::put_with_vclock (
     request.set_if_none_match(false);
     request.set_return_head(false);
 
-    auto handle_response = std::bind(&parse_put_response,
+    auto handle_response = std::bind(&self::accept_put_response, shared_from_this(),
             application_response, /* error */ _1, /* size */ _2, /* payload */ _3);
     send_put_request(request, handle_response);
 }
@@ -420,6 +427,33 @@ void client::request_runner::send_put_request (const RpbPutReq& r, message::hand
     wire_request->dispatch_via(client_.deliver_request_);
 }
 
+
+bool client::request_runner::accept_put_response (
+        put_response_handler respond_to_application,
+        const std::error_code& error,
+        std::size_t bytes_received,
+        const std::string& data)
+{
+    if (not error) {
+        assert(bytes_received != 0);
+        assert(bytes_received == data.size());
+        
+        RpbPutResp response;
+        if (message::retrieve(response, data.size(), data)) {
+            respond_to_application(riak::make_error_code());
+        } else {
+            log(log::severity::error) << "Received something other than a PUT reply (parsing failed).";
+            respond_to_application(riak::make_error_code(communication_failure::unparseable_response));
+        }
+    } else {
+        log(log::severity::error) << "Request failed: " << error.message();
+        respond_to_application(error);
+    }
+
+    // Always terminate the request, whether success or failure.
+    return true;
+}
+
 //=============================================================================
     namespace {
 //=============================================================================
@@ -439,31 +473,6 @@ RpbPutReq basic_put_request_for (
     if (overridden.dw)  request.set_dw(*overridden.dw);
     if (overridden.pw)  request.set_pw(*overridden.pw);
     return request;
-}
-
-
-bool parse_put_response (
-        put_response_handler respond_to_application,
-        const std::error_code& error,
-        std::size_t bytes_received,
-        const std::string& data)
-{
-    if (not error) {
-        assert(bytes_received != 0);
-        assert(bytes_received == data.size());
-        
-        RpbPutResp response;
-        if (message::retrieve(response, data.size(), data)) {
-            respond_to_application(riak::make_server_error());
-        } else {
-            respond_to_application(riak::make_server_error(riak::errc::response_was_nonsense));
-        }
-    } else {
-        respond_to_application(error);
-    }
-
-    // Always terminate the request, whether success or failure.
-    return true;
 }
 
 //=============================================================================

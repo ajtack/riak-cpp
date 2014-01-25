@@ -1,3 +1,4 @@
+#include <riak/error.hxx>
 #include <riak/request_with_timeout.hxx>
 
 //=============================================================================
@@ -75,7 +76,7 @@ void request_with_timeout::on_timeout (const boost::system::error_code& error)
 	unique_lock<mutex> serialize(this->mutex_);
 	timed_out_ = not error;
 	if (timed_out_) {
-		auto timeout_error = std::make_error_code(std::errc::timed_out);
+		auto timeout_error = make_error_code(communication_failure::response_timeout);
 		response_callback_(timeout_error, 0, "");
 		terminate_request_.reset();
 	}

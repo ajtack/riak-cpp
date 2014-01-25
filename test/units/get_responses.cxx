@@ -21,6 +21,22 @@ namespace riak {
 
 RpbGetResp empty_get_response;
 
+TEST_F(getting_client, client_receives_socket_errors)
+{
+    client->get_object("x", "y", response_handler);
+
+    EXPECT_CALL(closure_signal, exercise());
+    EXPECT_CALL(response_handler_mock, execute(Eq(std::make_error_code(std::errc::connection_reset)), _, _));
+
+    // Require at least one error line in logs.
+    using riak::log::severity;
+    EXPECT_CALL(log_sinks, consume(LogRecordAttributeSet(HasAttribute<severity>("Severity", Eq(severity::error)))));    
+
+    std::string garbage("uhetnaoutaenosueosaueoas");
+    send_from_server(std::make_error_code(std::errc::connection_reset), garbage.size(), garbage);
+}
+
+
 TEST_F(getting_client, client_survives_long_nonsense_reply_to_get)
 {
     client->get_object("a", "document", response_handler);
@@ -48,7 +64,7 @@ TEST_F(getting_client, client_survives_wrong_code_reply_to_get)
 
     EXPECT_CALL(closure_signal, exercise());
     EXPECT_CALL(response_handler_mock, execute(
-            Eq(riak::make_server_error(riak::errc::response_was_nonsense)),
+            Eq(riak::make_error_code(communication_failure::unparseable_response)),
             IsNull(),
             _));
     EXPECT_CALL(sibling_resolution, evaluate(_)).Times(0);
@@ -72,7 +88,7 @@ TEST_F(getting_client, client_survives_extra_data_in_empty_get_response)
 
     EXPECT_CALL(closure_signal, exercise());
     EXPECT_CALL(response_handler_mock, execute(
-            Eq(riak::make_server_error(riak::errc::no_error)),
+            Eq(riak::make_error_code()),
             Eq(std::shared_ptr<riak::object>()),
             _));
     EXPECT_CALL(sibling_resolution, evaluate(_)).Times(0);
@@ -93,7 +109,7 @@ TEST_F(getting_client, client_accepts_nonempty_get_response)
 
     EXPECT_CALL(closure_signal, exercise());
     EXPECT_CALL(response_handler_mock, execute(
-            Eq(riak::make_server_error(riak::errc::no_error)),
+            Eq(riak::make_error_code()),
             Pointee(Property(&riak::object::value, StrEq(nonempty_get_response.content(0).value()))),
             _));
     EXPECT_CALL(sibling_resolution, evaluate(_)).Times(0);
@@ -107,7 +123,7 @@ TEST_F(getting_client, client_accepts_empty_RbpGetResp)
     
     EXPECT_CALL(closure_signal, exercise());
     EXPECT_CALL(response_handler_mock, execute(
-            Eq(riak::make_server_error(riak::errc::no_error)),
+            Eq(riak::make_error_code()),
             IsNull(),
             _));
     EXPECT_CALL(sibling_resolution, evaluate(_)).Times(0);
@@ -141,7 +157,7 @@ TEST_F(getting_client, client_accepts_well_formed_response_in_parts)
     // The second half should trigger a response callback.
     EXPECT_CALL(closure_signal, exercise());
     EXPECT_CALL(response_handler_mock, execute(
-            Eq(riak::make_server_error(riak::errc::no_error)),
+            Eq(riak::make_error_code()),
             Pointee(Property(&riak::object::value, StrEq(nonempty_get_response.content(0).value()))),
             _));
     send_from_server(std::error_code(), second_half.size(), second_half);
