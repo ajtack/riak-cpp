@@ -4,7 +4,7 @@ library_build_path = '#build/riak/'
 VariantDir(library_build_path, 'riak')
 common_env = Environment(
         ENV = os.environ,
-        CXXFLAGS = ['--std=c++0x'],
+        CXXFLAGS = ['--std=c++0x', '-DBOOST_ALL_DYN_LINK'],
         CPPPATH = ['/opt/local/include', '#', '#build/', '/usr/include'],
         LIBPATH = ['/opt/local/lib'])
 
@@ -34,7 +34,7 @@ generate_protobuf_interfaces = Action("protoc $SOURCE --cpp_out=.", '$PROTOCCOMS
 env.Command(library_build_path + 'riakclient.pb.h', library_build_path + 'riakclient.proto', generate_protobuf_interfaces)
 env.Command(library_build_path + 'riakclient.pb.cc', library_build_path + 'riakclient.proto', generate_protobuf_interfaces)
 riak_protocol = env.Object(library_build_path + 'riakclient.pb.o', library_build_path + 'riakclient.pb.cc')
-library = env.StaticLibrary('riak', [sources, riak_protocol], build_dir=library_build_path)
+library = env.StaticLibrary('riak', [sources, riak_protocol, headers], build_dir=library_build_path)
 
 # Unit tests are compiled and run every time the program is compiled.
 Export('env')

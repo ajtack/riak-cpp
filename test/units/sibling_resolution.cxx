@@ -116,7 +116,7 @@ TEST_F(get_with_siblings, resolved_sibling_produces_get_result)
         if (message::retrieve(put_request, second_request_to_server.size(), second_request_to_server)) {
             // Respond to PUT with the same sibling
             EXPECT_CALL(response_handler_mock, execute(
-                    Eq(riak::make_server_error(riak::errc::no_error)),
+                    Eq(riak::make_error_code()),
                     Pointee(Property(&riak::object::value, StrEq(resolved_sibling->value()))),
                     _));
             RpbPutResp put_response;
@@ -168,7 +168,7 @@ TEST_F(get_with_siblings, resolving_sibling_handles_erroneous_server_reply)
         RpbPutReq put_request;
         if (message::retrieve(put_request, second_request_to_server.size(), second_request_to_server)) {
             EXPECT_CALL(response_handler_mock, execute(
-                    Ne(riak::make_server_error(riak::errc::no_error)),
+                    Ne(riak::make_error_code()),
                     _,
                     _));
             RpbPutResp put_response;
@@ -299,7 +299,7 @@ TEST_F(get_with_siblings, multiple_sibling_resolutions_are_correctly_handled)
                         if (message::retrieve(second_put_request, fourth_request_to_server.size(), fourth_request_to_server)) {
                             // Respond to the last PUT with the same sibling, resulting in a successful GET.
                             EXPECT_CALL(response_handler_mock, execute(
-                                    Eq(riak::make_server_error(riak::errc::no_error)),
+                                    Eq(riak::make_error_code()),
                                     Pointee(Property(&riak::object::value, StrEq(second_resolved_sibling->value()))),
                                     _));
                             RpbPutResp put_response;

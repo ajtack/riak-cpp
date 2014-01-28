@@ -1,4 +1,5 @@
 #pragma once
+#include <test/fixtures/log/captures_log_output.hxx>
 #include <test/fixtures/riak-client-mocked-for-two-requests.hxx>
 #include <test/mocks/get_request.hxx>
 #include <test/mocks/put_request.hxx>
@@ -11,6 +12,7 @@ namespace riak {
 
 struct get_and_put_client
        : public riak_client_mocked_for_two_requests
+       , captures_log_output
 {
     get_and_put_client ();
     ~get_and_put_client ();

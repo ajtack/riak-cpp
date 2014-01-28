@@ -1,41 +1,44 @@
 #pragma once
+#include <riak/compat.hxx>
 #include <system_error>
-#include <cstdint>
 
 //=============================================================================
 namespace riak {
 //=============================================================================
 
-struct errc {
-    static const errc no_error;
-    static const errc response_was_nonsense;
-    
-    operator std::uint8_t () const { assert(valid_); return value_; }
-    
-    errc ()
-      : valid_(false)
-    {   }
-    
-    errc& operator= (uint8_t val) {
-        value_ = val;
-        valid_ = true;
-        return *this;
-    }
-    
-    explicit errc (uint8_t v)
-      : value_(v),
-        valid_(true)
-    {   }
-    
-  private:
-    uint8_t value_;
-    bool valid_;
+enum class communication_failure {
+	none = 0,
+	unparseable_response,
+	inappropriate_response_content,
+
+	/*!
+	 * A well-behaving riak server will never yield this condition; it should generally be treated
+	 * as an error. Nevertheless, this condition may actually include a useful value, so a
+	 * forgiving application may choose to handle this condition differently from other errors.
+	 */
+	missing_vector_clock,
+
+	response_timeout,
 };
 
-const std::error_category& server_error ();
+const std::error_category& communication_failure_category ();
 
-std::error_code make_server_error(const errc code = errc::no_error);
+
+inline std::error_code make_error_code (riak::communication_failure failure = riak::communication_failure::none) RIAK_CPP_NOEXCEPT {
+	return std::error_code(static_cast<int>(failure), riak::communication_failure_category());
+}
 
 //=============================================================================
 }   // namespace riak
+
+namespace std {
+//=============================================================================
+
+template <>
+struct is_error_code_enum<::riak::communication_failure>
+	   : public true_type
+{	};
+
+//=============================================================================
+}   // namespace std
 //=============================================================================

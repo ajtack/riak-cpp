@@ -1,6 +1,7 @@
 #pragma once
 #include <boost/asio/io_service.hpp>
 #include <riak/client.hxx>
+#include <test/fixtures/logs_test_name.hxx>
 #include <test/mocks/get_request.hxx>
 #include <test/mocks/transport.hxx>
 #include <test/mocks/sibling_resolution.hxx>
@@ -12,7 +13,7 @@ namespace riak {
 //=============================================================================
 
 struct get_with_siblings
-       : public ::testing::Test
+       : public logs_test_name
 {
     get_with_siblings ();
     ~get_with_siblings ();

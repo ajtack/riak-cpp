@@ -7,6 +7,8 @@
 #include <gtest/gtest.h>
 #include <riak/message.hxx>
 #include <test/fixtures/getting_client.hxx>
+#include <test/matchers/has_attribute.hxx>
+#include <test/matchers/log_record_attribute_set.hxx>
 #include <system_error>
 
 using namespace ::testing;
@@ -18,6 +20,22 @@ namespace riak {
 //=============================================================================
 
 RpbGetResp empty_get_response;
+
+TEST_F(getting_client, client_receives_socket_errors)
+{
+    client.get_object("x", "y", response_handler);
+
+    EXPECT_CALL(closure_signal, exercise());
+    EXPECT_CALL(response_handler_mock, execute(Eq(std::make_error_code(std::errc::connection_reset)), _, _));
+
+    // Require at least one error line in logs.
+    using riak::log::severity;
+    EXPECT_CALL(log_sinks, consume(LogRecordAttributeSet(HasAttribute<severity>("Severity", Eq(severity::error)))));    
+
+    std::string garbage("uhetnaoutaenosueosaueoas");
+    send_from_server(std::make_error_code(std::errc::connection_reset), garbage.size(), garbage);
+}
+
 
 TEST_F(getting_client, client_survives_long_nonsense_reply_to_get)
 {
@@ -46,10 +64,15 @@ TEST_F(getting_client, client_survives_wrong_code_reply_to_get)
 
     EXPECT_CALL(closure_signal, exercise());
     EXPECT_CALL(response_handler_mock, execute(
-            Eq(riak::make_server_error(riak::errc::response_was_nonsense)),
+            Eq(riak::make_error_code(communication_failure::unparseable_response)),
             IsNull(),
             _));
     EXPECT_CALL(sibling_resolution, evaluate(_)).Times(0);
+
+    // Require at least one error line in logs -- this is highly irregular behavior.
+    using riak::log::severity;
+    EXPECT_CALL(log_sinks, consume(LogRecordAttributeSet(HasAttribute<severity>("Severity", Eq(severity::error)))));
+
     send_from_server(std::error_code(), bad_reply.to_string().size(), bad_reply.to_string());
 }
 
@@ -65,7 +88,7 @@ TEST_F(getting_client, client_survives_extra_data_in_empty_get_response)
 
     EXPECT_CALL(closure_signal, exercise());
     EXPECT_CALL(response_handler_mock, execute(
-            Eq(riak::make_server_error(riak::errc::no_error)),
+            Eq(riak::make_error_code()),
             Eq(std::shared_ptr<riak::object>()),
             _));
     EXPECT_CALL(sibling_resolution, evaluate(_)).Times(0);
@@ -86,7 +109,7 @@ TEST_F(getting_client, client_accepts_nonempty_get_response)
 
     EXPECT_CALL(closure_signal, exercise());
     EXPECT_CALL(response_handler_mock, execute(
-            Eq(riak::make_server_error(riak::errc::no_error)),
+            Eq(riak::make_error_code()),
             Pointee(Property(&riak::object::value, StrEq(nonempty_get_response.content(0).value()))),
             _));
     EXPECT_CALL(sibling_resolution, evaluate(_)).Times(0);
@@ -100,7 +123,7 @@ TEST_F(getting_client, client_accepts_empty_RbpGetResp)
     
     EXPECT_CALL(closure_signal, exercise());
     EXPECT_CALL(response_handler_mock, execute(
-            Eq(riak::make_server_error(riak::errc::no_error)),
+            Eq(riak::make_error_code()),
             IsNull(),
             _));
     EXPECT_CALL(sibling_resolution, evaluate(_)).Times(0);
@@ -134,10 +157,44 @@ TEST_F(getting_client, client_accepts_well_formed_response_in_parts)
     // The second half should trigger a response callback.
     EXPECT_CALL(closure_signal, exercise());
     EXPECT_CALL(response_handler_mock, execute(
-            Eq(riak::make_server_error(riak::errc::no_error)),
+            Eq(riak::make_error_code()),
             Pointee(Property(&riak::object::value, StrEq(nonempty_get_response.content(0).value()))),
             _));
     send_from_server(std::error_code(), second_half.size(), second_half);
+}
+
+
+TEST_F(getting_client, client_returns_single_object_with_no_vector_clock)
+{
+    // This should, by the construction of Riak servers, never happen, because it means any put
+    // must create a new sibling or destructively replace the stored object. Nevertheless, it is
+    // a nonfatal condition -- a well-formed application can still use the result.
+    //
+    RpbGetResp nonempty_get_response;
+    nonempty_get_response.add_content()->set_value("Son of a gun!");
+    // nonempty_get_response.set_vclock("whatever");   <----- !!
+    std::string response_data;
+    nonempty_get_response.SerializeToString(&response_data);
+    riak::message::wire_package clean_reply(riak::message::code::GetResponse, response_data);
+    auto data = clean_reply.to_string();
+
+    client.get_object("a", "document", response_handler);
+
+    // This response should trigger a response callback with no error.
+    EXPECT_CALL(closure_signal, exercise());
+    EXPECT_CALL(response_handler_mock, execute(
+            Eq(riak::make_error_code(communication_failure::missing_vector_clock)),
+            Pointee(Property(&riak::object::value, StrEq(nonempty_get_response.content(0).value()))),
+            _));
+
+    // Require at least one warning about siblings in logs.
+    using riak::log::severity;
+    EXPECT_CALL(log_sinks, consume(
+            AllOf(
+                LogRecordAttributeSet(HasAttribute<severity>("Severity", Eq(severity::warning))),
+                LogRecordAttributeSet(HasAttribute<std::string>("Message", MatchesRegex(".*siblings?.*"))))));
+
+    send_from_server(std::error_code(), data.size(), data);
 }
 
 //=============================================================================

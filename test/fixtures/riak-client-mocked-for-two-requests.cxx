@@ -6,7 +6,8 @@ using namespace ::testing;
 //=============================================================================
 namespace riak {
     namespace test {
-    	namespace {
+        namespace fixture {
+            namespace {
 //=============================================================================
 
 std::shared_ptr<object> no_sibling_resolution (const ::riak::siblings&)
@@ -16,7 +17,7 @@ std::shared_ptr<object> no_sibling_resolution (const ::riak::siblings&)
 }
 
 //=============================================================================
-		}   // namespace (anonymous)
+            }   // namespace (anonymous)
 //=============================================================================
 
 using std::placeholders::_1;
@@ -45,6 +46,7 @@ riak_client_mocked_for_two_requests::~riak_client_mocked_for_two_requests ()
 {   }
 
 //=============================================================================
+        }   // namespace fixture
     }   // namespace test
 }   // namespace riak
 //=============================================================================

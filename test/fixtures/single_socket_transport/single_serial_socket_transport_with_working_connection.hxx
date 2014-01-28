@@ -1,4 +1,5 @@
 #pragma once
+#include <test/fixtures/logs_test_name.hxx>
 #include <test/mocks/transport/single_serial_socket/socket.hxx>
 #include <riak/transports/single_serial_socket/scheduler.hxx>
 #include <boost/asio/io_service.hpp>
@@ -14,7 +15,7 @@ namespace riak {
 //=============================================================================
 
 struct single_serial_socket_transport_with_working_connection
-       : public ::testing::Test
+       : public logs_test_name
 {
 	single_serial_socket_transport_with_working_connection ();
 	virtual ~single_serial_socket_transport_with_working_connection ();
