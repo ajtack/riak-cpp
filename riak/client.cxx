@@ -161,10 +161,13 @@ bool client::request_runner::accept_delete_response (
         const std::string& data)
 {
     if (not error) {
+        log(log::severity::trace) << "Parsing server response ...";
+
         if (message::verify_code(message::code::DeleteResponse, bytes_received, data)) {
+            log(log::severity::info) << "Delete successful.";
             respond_to_application(riak::make_error_code());
         } else {
-            log(log::severity::error) << "Received a non-delete reply to this delete request (or message could not be decoded).";
+            log(log::severity::error) << "Received something other than a DELETE reply (parsing failed).";
             respond_to_application(riak::make_error_code(communication_failure::unparseable_response));
         }
     } else {
@@ -184,7 +187,7 @@ void client::get_object (const key& bucket, const key& k, get_response_handler h
     assert(not k.empty());       // TODO: if (not key.empty) ... else ...
     
     application_request_context context(access_overrides_, request_failure_defaults_);
-    context.log(log_) << "GET " << bucket << " / " << k;
+    context.log(log_) << "GET '" << bucket << "' / '" << k << '\'';
 
     auto runner = std::make_shared<request_runner>(*this, std::move(context));
     runner->run_get_request(bucket, k, resolve_siblings_, handle_get_result);
@@ -275,29 +278,40 @@ bool client::request_runner::accept_get_response (
     auto report_error = std::bind(respond_to_application, _1, no_content, no_value_updater);
 
     if (not error) {
+        log(log::severity::trace) << "Parsing server response ...";
         assert(bytes_received != 0);
         assert(bytes_received == data.size());
-        
+
         RpbGetResp response;
         if (message::retrieve(response, data.size(), data)) {
+            value_updater add_content = std::bind(&self::put_with_vclock, shared_from_this(),
+                    bucket, k, boost::none, _1 /* object */, _2 /* response handler */);
+
             if (response.content_size() > 1) {
                 if (response.has_vclock()) {
+                    log(log::severity::trace) << "Found " << response.content_size() << " siblings; attempting resolution.";
                     resolve_siblings_and_put(bucket, k, resolve_siblings, response, respond_to_application);
                 } else {
+                    log(log::severity::error) << "Found " << response.content_size() << " siblings with no vector clock -- cannot resolve.";
                     report_error(communication_failure::inappropriate_response_content);
                 }
             } else if (response.content_size() == 1) {
+                std::shared_ptr<object> the_value(response.mutable_content()->ReleaseLast());
+
                 if (response.has_vclock()) {
+                    log(log::severity::info) << "GET successful (found object).";
                     value_updater update_content = std::bind(&self::put_with_vclock, shared_from_this(),
                             bucket, k, response.vclock(), _1 /* object */, _2 /* response handler */);
-                    std::shared_ptr<object> the_value(response.mutable_content()->ReleaseLast());
                     respond_to_application(riak::make_error_code(), the_value, update_content);
                 } else {
-                    report_error(communication_failure::inappropriate_response_content);
+                    log(log::severity::warning) << "Found 1 object with no vector clock -- storing to this index may create siblings.";
+                    respond_to_application(
+                            riak::make_error_code(communication_failure::missing_vector_clock),
+                            the_value,
+                            add_content /* Creates a sibling, probably. */);
                 }
             } else {
-                value_updater add_content = std::bind(&self::put_with_vclock, shared_from_this(),
-                        bucket, k, boost::none, _1 /* object */, _2 /* response handler */);
+                log(log::severity::info) << "GET successful (no content).";
                 respond_to_application(riak::make_error_code(), no_content, add_content);
             }
         } else {
@@ -350,6 +364,7 @@ bool client::request_runner::return_successfully_resolved_sibling_or_retry (
             bucket, k, boost::none, /* object */ _1, /* put resp */ _2);
 
     if (not error) {
+        log(log::severity::trace) << "Processing result of sibling resolution ...";
         assert(bytes_received != 0);
         assert(bytes_received == data.size());
         
@@ -359,15 +374,20 @@ bool client::request_runner::return_successfully_resolved_sibling_or_retry (
                 value_updater put_new_value = std::bind(&self::put_with_vclock, shared_from_this(),
                         bucket, k, response.vclock(),
                         _1 /* new value */, _2 /* response_handler */);
+
+                log(log::severity::info) << "GET successful after applying sibling resolution.";
                 respond_to_application(riak::make_error_code(), cached_object, put_new_value);
             } else {
+                log(log::severity::trace) << "Value collided again upon resolution. Fetching new siblings ...";
                 run_get_request(bucket, k, resolve_siblings, respond_to_application);
             }
         } else {
+            log(log::severity::error) << "Sibling resolution was interrupted by an unusable response from the server.";
             auto nonsense = riak::make_error_code(communication_failure::unparseable_response);
             respond_to_application(nonsense, no_content, add_sibling);
         }
     } else {
+        log(log::severity::error) << "Sibling resolution was interrupted by a network failure: \"" << error.message() << "\"";
         respond_to_application(error, no_content, add_sibling);
     }
 
@@ -383,9 +403,15 @@ void client::request_runner::put_with_vclock (
         const std::shared_ptr<object>& content,
         put_response_handler& application_response)
 {
+    log(log::severity::info) << "PUT '" << bucket << "' / '" << k << '\'';
     RpbPutReq request = basic_put_request_for(bucket, k, content, request_context_);
-    if (!! vclock)
+    if (!! vclock) {
+        log(log::severity::trace) << "New value has vector clock '" << *vclock << '\'';
         request.set_vclock(*vclock);
+    } else {
+        log(log::severity::trace) << "Putting new value (no ancestor).";
+    }
+
     request.set_return_body(false);
     request.set_if_not_modified(false);
     request.set_if_none_match(false);
@@ -404,6 +430,8 @@ void client::request_runner::put_resolved_sibling (
         const std::shared_ptr<object>& content,
         resolution_response_handler_factory& response_handler_for)
 {
+    log(log::severity::trace) << "Resolved value has vector clock '" << vclock << "'. Transmitting ...";
+
     RpbPutReq request = basic_put_request_for(bucket, k, content, request_context_);
     request.set_vclock(vclock);
     request.set_return_body(false);
@@ -435,11 +463,11 @@ bool client::request_runner::accept_put_response (
         const std::string& data)
 {
     if (not error) {
-        assert(bytes_received != 0);
-        assert(bytes_received == data.size());
-        
+        log(log::severity::trace) << "Parsing server response ...";
+
         RpbPutResp response;
         if (message::retrieve(response, data.size(), data)) {
+            log(log::severity::info) << "PUT successful.";
             respond_to_application(riak::make_error_code());
         } else {
             log(log::severity::error) << "Received something other than a PUT reply (parsing failed).";

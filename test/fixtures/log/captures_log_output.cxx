@@ -22,6 +22,7 @@ captures_log_output::captures_log_output ()
 	ON_CALL(log_sinks, will_consume(_)).WillByDefault(Return(true));
 	ON_CALL(log_sinks, will_consume(HasAttribute<riak::test::log::channel>("Channel", _)))
 			.WillByDefault(Return(false));
+	EXPECT_CALL(log_sinks, consume(_)).Times(AnyNumber());
 }
 
 

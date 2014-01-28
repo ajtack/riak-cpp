@@ -10,6 +10,14 @@ enum class communication_failure {
 	none = 0,
 	unparseable_response,
 	inappropriate_response_content,
+
+	/*!
+	 * A well-behaving riak server will never yield this condition; it should generally be treated
+	 * as an error. Nevertheless, this condition may actually include a useful value, so a
+	 * forgiving application may choose to handle this condition differently from other errors.
+	 */
+	missing_vector_clock,
+
 	response_timeout,
 };
 
