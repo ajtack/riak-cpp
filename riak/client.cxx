@@ -284,7 +284,9 @@ bool client::request_runner::accept_get_response (
 
         RpbGetResp response;
         if (message::retrieve(response, data.size(), data)) {
-            value_updater add_content = std::bind(&self::put_with_vclock, shared_from_this(),
+            auto& old_context = request_context_;
+            auto new_request_runner = std::make_shared<request_runner>(client_, old_context.copy_with_new_request_id());
+            value_updater add_content = std::bind(&self::put_with_vclock, new_request_runner,
                     bucket, k, boost::none, _1 /* object */, _2 /* response handler */);
 
             if (response.content_size() > 1) {
@@ -300,7 +302,7 @@ bool client::request_runner::accept_get_response (
 
                 if (response.has_vclock()) {
                     log(log::severity::info) << "GET successful (found object).";
-                    value_updater update_content = std::bind(&self::put_with_vclock, shared_from_this(),
+                    value_updater update_content = std::bind(&self::put_with_vclock, new_request_runner,
                             bucket, k, response.vclock(), _1 /* object */, _2 /* response handler */);
                     respond_to_application(riak::make_error_code(), the_value, update_content);
                 } else {

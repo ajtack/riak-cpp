@@ -34,7 +34,17 @@ struct application_request_context
 	
 	const object_access_parameters access_overrides;
 	const request_failure_parameters request_failure_defaults;
-	boost::uuids::uuid request_id;
+	const boost::uuids::uuid request_id;
+
+	/*!
+	 * Produces a request context with a new request-id label. Meant to allow the code to
+	 * distinguish wire requests that are the result of *automatic* behavior of the riak
+	 * client library vs. those that are explicit instructions of the application. All meta-
+	 * parameters of the requests remain the same.
+	 */
+	application_request_context copy_with_new_request_id () const {
+		return application_request_context(this->access_overrides, this->request_failure_defaults);
+	}
 
 	/*!
 	 * Behaves exactly as boost::log::record_ostream, but guarantees that the record is
