@@ -1,0 +1,14 @@
+Import('env')
+
+headers = Glob('*.hxx') + \
+          Glob('*.pb.h') + \
+          Glob('transports/*/*.hxx')
+sources = Glob('*.cxx') + \
+          Glob('transports/*/*.cxx')
+generate_protobuf_interfaces = Action("protoc $SOURCE --cpp_out=.", '$PROTOCCOMSTR')
+env.Command('riakclient.pb.h', 'riakclient.proto', generate_protobuf_interfaces)
+env.Command('riakclient.pb.cc', 'riakclient.proto', generate_protobuf_interfaces)
+riak_protocol = env.Object('riakclient.pb.o', 'riakclient.pb.cc')
+library = env.StaticLibrary('riak', [sources, riak_protocol, headers])
+
+Return('library')

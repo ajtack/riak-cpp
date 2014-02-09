@@ -1,11 +1,9 @@
 import os
 
-library_build_path = '#build/riak/'
-VariantDir(library_build_path, 'riak')
 common_env = Environment(
         ENV = os.environ,
-        CXXFLAGS = ['--std=c++0x', '-DBOOST_ALL_DYN_LINK'],
-        CPPPATH = ['/opt/local/include', '#', '#build/', '/usr/include'],
+        CXXFLAGS = ['--std=c++11', '-DBOOST_ALL_DYN_LINK'],
+        CPPPATH = ['/opt/local/include', '#', '/usr/include'],
         LIBPATH = ['/opt/local/lib'])
 
 if ARGUMENTS.get('VERBOSE') != 'yes':
@@ -19,39 +17,21 @@ if ARGUMENTS.get('VERBOSE') != 'yes':
 
 debug_env = common_env.Clone(CCFLAGS = ['-O0', '-g'])
 
-if ARGUMENTS.get('DEBUG') == 'yes':
-    env = debug_env
-else:
-    env = common_env
+def build_variant(script_path, name, *additional_exports):
+    variant = 'debug' if ARGUMENTS.get('DEBUG') == 'yes' else 'release'
+    env = debug_env.Clone() if variant == 'debug' else common_env.Clone()
+    variant_root = '#build/' + variant + '/'
+    build_root = variant_root + name + '/'
+    env.Append(CPPPATH = [variant_root])
+    
+    exports = list(additional_exports)
+    exports.append('env')
+    return SConscript(script_path, exports, variant_dir=build_root)
 
-headers = Glob(library_build_path + '*.hxx') + \
-          Glob(library_build_path + '*.pb.h')
-transports = Glob(library_build_path + 'transports/*/*.hxx')
-sources = Glob(library_build_path + '*.cxx') + \
-          Glob(library_build_path + '*.proto') + \
-          Glob(library_build_path + 'transports/*/*.cxx')
-generate_protobuf_interfaces = Action("protoc $SOURCE --cpp_out=.", '$PROTOCCOMSTR')
-env.Command(library_build_path + 'riakclient.pb.h', library_build_path + 'riakclient.proto', generate_protobuf_interfaces)
-env.Command(library_build_path + 'riakclient.pb.cc', library_build_path + 'riakclient.proto', generate_protobuf_interfaces)
-riak_protocol = env.Object(library_build_path + 'riakclient.pb.o', library_build_path + 'riakclient.pb.cc')
-library = env.StaticLibrary('riak', [sources, riak_protocol, headers], build_dir=library_build_path)
-
-# Unit tests are compiled and run every time the program is compiled.
-Export('env')
-Export('library')
+library = build_variant('riak/SConscript', 'riak')
+unit_tests = build_variant('test/SConscript', 'test', 'library')
+AddPostAction(unit_tests, unit_tests[0].path)
+Default(library, unit_tests)
 
 if 'debian' in COMMAND_LINE_TARGETS:
       SConscript("deb/SConscript")
-
-unit_tests = SConscript('test/SConscript', variant_dir='build/test/units')
-AddPostAction(unit_tests, unit_tests[0].path)
-
-Default(library, unit_tests)
-
-#
-# Installation
-#
-prefix = '/usr/local'
-env.Alias('install', env.Install('/usr/local/lib', library))
-env.Alias('install', env.Install('/usr/local/include/riak', headers))
-env.Alias('install', env.Install('/usr/local/include/riak/transports', transports))

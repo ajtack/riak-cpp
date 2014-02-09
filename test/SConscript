@@ -1,6 +1,14 @@
 Import('env')
 Import('library')
 
+unit_tests_env = env.Clone()
+unit_tests_env.Append(
+	CPPPATH = [
+		'#ext/gmock-1.7.0/include',
+		'#ext/gmock-1.7.0/gtest/include'
+		],
+	)
+
 compilation_units = [
 		Glob('units/*.cxx'),
 		Glob('fixtures/*.cxx'),
@@ -10,7 +18,9 @@ compilation_units = [
 		Glob('mocks/*/*/*.cxx')
 	]
 
-unit_tests = env.Program('unit_tests', compilation_units, LIBS=[library, 'boost_log-mt', 'boost_log_setup-mt', 'boost_thread-mt', 'pthread', 'boost_system-mt', 'protobuf', 'gmock', 'gtest'])
-env.Alias('test', [unit_tests], unit_tests[0].path)
-env.AlwaysBuild('test')
+gmock = SConscript('#ext/gmock.SConscript', 'env', variant_dir='ext/')
+gtest = SConscript('#ext/gtest.SConscript', 'env', variant_dir='ext/')
+unit_tests = unit_tests_env.Program('unit_tests', compilation_units, LIBS=[library, gmock, gtest, 'boost_log-mt', 'boost_log_setup-mt', 'boost_thread-mt', 'pthread', 'boost_system-mt', 'protobuf'])
+unit_tests_env.Alias('test', [unit_tests], unit_tests[0].path)
+unit_tests_env.AlwaysBuild('test')
 Return('unit_tests')
