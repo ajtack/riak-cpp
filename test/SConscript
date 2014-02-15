@@ -20,7 +20,11 @@ compilation_units = [
 
 gmock = SConscript('#ext/gmock.SConscript', 'env', variant_dir='ext/')
 gtest = SConscript('#ext/gtest.SConscript', 'env', variant_dir='ext/')
-unit_tests = unit_tests_env.Program('unit_tests', compilation_units, LIBS=[library, gmock, gtest, 'boost_log-mt', 'boost_log_setup-mt', 'boost_thread-mt', 'pthread', 'boost_system-mt', 'protobuf'])
+
+necessary_libraries = env['LIBS']
+necessary_libraries.extend([library, gmock, gtest])
+
+unit_tests = unit_tests_env.Program('unit_tests', compilation_units, LIBS=necessary_libraries)
 unit_tests_env.Alias('test', [unit_tests], unit_tests[0].path)
 unit_tests_env.AlwaysBuild('test')
 Return('unit_tests')

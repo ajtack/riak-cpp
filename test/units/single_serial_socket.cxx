@@ -9,6 +9,7 @@
 #include <test/fixtures/single_socket_transport/single_serial_socket_transport_with_working_connection.hxx>
 #include <test/mocks/transport.hxx>
 #include <ostream>
+#include <system_error>
 #include <boost/bind.hpp>
 
 using namespace ::testing;
@@ -107,6 +108,19 @@ class InvokeTerminateOption
 	bool ended_cleanly_;
 };
 
+
+/*!
+ * Wraps around a compilor incompatibility between std::errc and std::errc::errc (guess which platform)
+ */
+std::error_code make_std_error_code (int code_value)
+{
+	#if _MSC_VER >= 1600
+		return std::make_error_code(static_cast<std::errc::errc>(code_value));				
+	#else
+		return std::make_error_code(static_cast<std::errc>(code_value));		
+	#endif
+}
+
 //=============================================================================
 		}   // namespace (anonymous)
 //=============================================================================
@@ -127,7 +141,7 @@ TEST_F(single_serial_socket_transport_with_working_connection, complete_response
 	// The meat of the test!
 	mock::transport::device::response_handler handler;
 	auto t = transport->deliver("what do mouse zombies like to eat?", std::bind(&mock::transport::device::response_handler::execute, &handler, _1, _2, _3));
-	auto error_code = std::make_error_code(static_cast<std::errc>(boost::system::error_code().value()));
+	auto error_code = make_std_error_code(boost::system::error_code().value());
 	EXPECT_CALL(handler, execute(error_code, expected_response.size(), Eq(expected_response)))
 		.WillOnce(Invoke(InvokeTerminateOption(t)));
 
@@ -148,7 +162,7 @@ TEST_F(single_serial_socket_transport_with_working_connection, connection_failur
 	// Make sure we get this error at the handler.
 	mock::transport::device::response_handler handler;
 	auto t = transport->deliver("what do mouse zombies like to eat?", std::bind(&mock::transport::device::response_handler::execute, &handler, _1, _2, _3));
-	auto error_code = std::make_error_code(static_cast<std::errc>(boost::asio::error::connection_reset));
+	auto error_code = make_std_error_code(boost::asio::error::connection_reset);
 	EXPECT_CALL(handler, execute(error_code, 0, "")).WillOnce(Invoke(InvokeTerminateOption(t)));
 
 	ios.run();
@@ -164,7 +178,7 @@ TEST_F(single_serial_socket_transport_with_working_connection, connection_failur
 	// Make sure we get this error at the handler.
 	mock::transport::device::response_handler handler;
 	auto t = transport->deliver("what do mouse zombies like to eat?", std::bind(&mock::transport::device::response_handler::execute, &handler, _1, _2, _3));
-	auto error_code = std::make_error_code(static_cast<std::errc>(boost::asio::error::connection_reset));
+	auto error_code = make_std_error_code(boost::asio::error::connection_reset);
 	EXPECT_CALL(handler, execute(error_code, 0, "")).WillOnce(Invoke(InvokeTerminateOption(t)));
 
 	ios.run();

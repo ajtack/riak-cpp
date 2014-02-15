@@ -23,7 +23,7 @@ class communication_failure_category
 		  case communication_failure::inappropriate_response_content: return "The Riak server sent a response that was parseable, but with invalid content.";
 		  case communication_failure::missing_vector_clock: return "Object found, but vector clock was missing -- this object may be poisoned and create siblings uncontrollably.";
 		  case communication_failure::response_timeout: return "The response took too long to arrive.";
-		  default: assert(false);
+		  default: assert(false); return "Communication failure.";
 		}
 	}
 } the_communication_failure_category;

@@ -1,4 +1,10 @@
 #pragma once
+
+#ifdef _WIN32
+    // Solves a problem in which BOOST_PP_... is missing in included files.
+#   include <boost/preprocessor/repetition/enum_binary_params.hpp>
+#endif
+
 #include <boost/log/sources/channel_logger.hpp>
 #include <gtest/gtest.h>
 #include <memory>
@@ -25,7 +31,7 @@ class logs_test_name
 	class scope;
 	std::unique_ptr<scope> scope_;
 
-	boost::log::sources::channel_logger<::riak::test::log::channel> logger_;
+	boost::log::sources::channel_logger< ::riak::test::log::channel> logger_;
 };
 
 //=============================================================================

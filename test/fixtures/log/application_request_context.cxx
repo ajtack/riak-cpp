@@ -19,9 +19,6 @@ application_request_context::~application_request_context ()
 
 riak::application_request_context application_request_context::new_context ()
 {
-	transport::delivery_provider mock_transport_device =
-			std::bind(&mock::transport::device::deliver, std::ref(transport_), _1, _2);
-
 	return riak::application_request_context(oap_, rfp_);
 }
 

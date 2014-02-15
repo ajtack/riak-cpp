@@ -19,8 +19,8 @@ request_with_timeout::request_with_timeout (
 		boost::asio::io_service& ios)
   : timeout_length_(timeout)
   , timeout_(ios)
-  , request_data_(data)
   , response_callback_(h)
+  , request_data_(data)
   , succeeded_(false)
   , timed_out_(false)
 {   }

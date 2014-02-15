@@ -329,7 +329,7 @@ TEST_F(get_and_put_client, cold_object_update_after_get_gets_new_application_req
     request_handler_1(std::error_code(), clean_fetch_reply().size(), clean_fetch_reply());
 
     // Update the value: check that this yields a new request ID.
-    const auto original_record_attributes = original_get_log_record.attribute_values();
+    const auto& original_record_attributes = original_get_log_record.attribute_values();
     const auto old_request_id = original_record_attributes["Riak/ClientRequestId"].extract<request_id_type>();
     EXPECT_CALL(log_sinks, consume(LogRecordAttributeSet(
                 HasAttribute<request_id_type>("Riak/ClientRequestId", Ne(old_request_id)))))
@@ -369,7 +369,7 @@ TEST_F(get_and_put_client, warm_object_update_after_get_gets_new_application_req
     request_handler_1(std::error_code(), fetch_reply_data.size(), fetch_reply_data);
 
     // Update the value: check that this yields a new request ID.
-    const auto original_record_attributes = original_get_log_record.attribute_values();
+    const auto& original_record_attributes = original_get_log_record.attribute_values();
     const auto old_request_id = original_record_attributes["Riak/ClientRequestId"].extract<request_id_type>();
     EXPECT_CALL(log_sinks, consume(LogRecordAttributeSet(
                 HasAttribute<request_id_type>("Riak/ClientRequestId", Ne(old_request_id)))))

@@ -228,12 +228,6 @@ RpbPutReq basic_put_request_for (
         const std::shared_ptr<object>& content,
         const application_request_context&);
 
-bool parse_put_response (
-        put_response_handler,
-        const std::error_code&,
-        std::size_t,
-        const std::string&);
-
 typedef std::function <bool(std::shared_ptr<object>&,
                             const std::error_code&,
                             std::size_t,

@@ -1,4 +1,10 @@
 #pragma once
+
+#ifdef _WIN32
+    // Solves a problem in which BOOST_PP_... is missing in included files.
+#   include <boost/preprocessor/repetition/enum_binary_params.hpp>
+#endif
+
 #include <boost/log/sources/severity_channel_logger.hpp>
 #include <memory>
 #include <riak/log.hxx>

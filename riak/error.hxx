@@ -35,7 +35,7 @@ namespace std {
 //=============================================================================
 
 template <>
-struct is_error_code_enum<::riak::communication_failure>
+struct is_error_code_enum< ::riak::communication_failure>
 	   : public true_type
 {	};
 

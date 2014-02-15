@@ -1,7 +1,7 @@
 #pragma once
 
 namespace boost {
-	namespace uuids { class uuid; }
+	namespace uuids { struct uuid; }
 }
 
 //=============================================================================

@@ -1,5 +1,6 @@
 *.o
 *.sconsign.dblite
+.sconf_temp
 build
 libriak.a
 riak/riakclient.pb.cc
