@@ -110,7 +110,7 @@ void scheduler::on_read (
             // the lack of serialization here.
             auto handler = active_request_->second;
             serialize.unlock();
-#if _MSC_VER >= 1600
+#if _MSC_VER >= 1600 && _MSC_VER < 1800
             auto error_code = std::make_error_code(static_cast<std::errc::errc>(error.value()));
 #else
             auto error_code = std::make_error_code(static_cast<std::errc>(error.value()));
@@ -179,7 +179,7 @@ void scheduler::handle_socket_error (const boost::system::error_code& error, boo
         // An actual error occurred, and we need to inform the application layer.
         //
         auto handler = active_request_->second;
-#if _MSC_VER >= 1600
+#if _MSC_VER >= 1600 && _MSC_VER < 1800
         auto error_code = std::make_error_code(static_cast<std::errc::errc>(error.value()));
 #else
         auto error_code = std::make_error_code(static_cast<std::errc>(error.value()));

@@ -114,7 +114,7 @@ class InvokeTerminateOption
  */
 std::error_code make_std_error_code (int code_value)
 {
-	#if _MSC_VER >= 1600
+	#if _MSC_VER >= 1600 && _MSC_VER < 1800
 		return std::make_error_code(static_cast<std::errc::errc>(code_value));				
 	#else
 		return std::make_error_code(static_cast<std::errc>(code_value));		
