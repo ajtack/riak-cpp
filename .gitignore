@@ -15,3 +15,6 @@ ipch
 *.DS_Store
 deb
 *.log
+*.idb
+*.pdb
+
