@@ -55,7 +55,7 @@ class client::request_runner
             const key& k,
             const boost::optional<vector_clock>&,
             const std::shared_ptr<object>&,
-            put_response_handler&);
+            put_response_handler);
 
     void put_resolved_sibling (
             const key& bucket,
@@ -321,15 +321,28 @@ void client::request_runner::resolve_siblings_and_put (
         get_response_handler respond_to_application)
 {
     assert(response.content_size() > 1);
-
-    resolution_response_handler_for_object handle_resolved_sibling_put_response =
-            std::bind(&self::return_successfully_resolved_sibling_or_retry, shared_from_this(),
-                    bucket, k, resolve_siblings, _1, respond_to_application,
-                    _2, _3, _4);
-    resolution_response_handler_factory deliver_resolved_sibling =
-            std::bind(make_resolution_response_handler, _1, handle_resolved_sibling_put_response);
     auto resolved_content = resolve_siblings(response.content());
-    put_resolved_sibling(bucket, k, response.vclock(), resolved_content, deliver_resolved_sibling);
+
+    if (!! resolved_content) {
+        log(log::severity::trace) << "Resolved value has vector clock '" << response.vclock() << "'. Transmitting ...";
+        resolution_response_handler_for_object handle_resolved_sibling_put_response =
+                std::bind(&self::return_successfully_resolved_sibling_or_retry, shared_from_this(),
+                        bucket, k, resolve_siblings, _1, respond_to_application,
+                        _2, _3, _4);
+        resolution_response_handler_factory deliver_resolved_sibling =
+                std::bind(make_resolution_response_handler, _1, handle_resolved_sibling_put_response);
+
+        put_resolved_sibling(bucket, k, response.vclock(), resolved_content, deliver_resolved_sibling);
+    } else {
+        log(log::severity::warning) << "Sibling resolution yielded NULL. Responding as for 'no content'.";
+        auto& no_content = resolved_content;
+        auto& old_context = request_context_;
+        auto new_request_runner = std::make_shared<request_runner>(client_, old_context.copy_with_new_request_id());
+        value_updater add_content = std::bind(&self::put_with_vclock, new_request_runner,
+                bucket, k, boost::none, _1 /* object */, _2 /* response handler */);
+
+        respond_to_application(riak::make_error_code(), no_content, add_content);
+    }
 }
 
 
@@ -385,7 +398,7 @@ void client::request_runner::put_with_vclock (
         const key& k,
         const boost::optional<vector_clock>& vclock,
         const std::shared_ptr<object>& content,
-        put_response_handler& application_response)
+        put_response_handler application_response)
 {
     log(log::severity::info) << "PUT '" << bucket << "' / '" << k << '\'';
     RpbPutReq request = basic_put_request_for(bucket, k, content, request_context_);
@@ -414,8 +427,6 @@ void client::request_runner::put_resolved_sibling (
         const std::shared_ptr<object>& content,
         resolution_response_handler_factory& response_handler_for)
 {
-    log(log::severity::trace) << "Resolved value has vector clock '" << vclock << "'. Transmitting ...";
-
     RpbPutReq request = basic_put_request_for(bucket, k, content, request_context_);
     request.set_vclock(vclock);
     request.set_return_body(false);

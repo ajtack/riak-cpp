@@ -7,6 +7,7 @@
 #include <gtest/gtest.h>
 #include <riak/message.hxx>
 #include <test/fixtures/get_with_siblings.hxx>
+#include <test/mocks/put_request.hxx>
 #include <system_error>
 
 using namespace ::testing;
@@ -53,6 +54,74 @@ TEST_F(get_with_siblings, getting_siblinged_value_triggers_resolution)
 }
 
 
+TEST_F(get_with_siblings, null_resolution_result_yields_a_nonerror_result)
+{
+    client.get_object("a", "document", response_handler);
+
+    // Prepare to handle the GET response.
+    auto null_result = std::shared_ptr<object>();
+    ON_CALL(sibling_resolution, evaluate(_)).WillByDefault(Return(null_result));
+    EXPECT_CALL(response_handler_mock, execute(
+            Eq(riak::make_error_code()),
+            IsNull(),
+            _));
+
+    // Server produces siblings
+    std::string encoded_response;
+    multi_value_get_response().SerializeToString(&encoded_response);
+    riak::message::wire_package wire_response(riak::message::code::GetResponse, encoded_response);
+    send_from_server(std::error_code(), wire_response.to_string().size(), wire_response.to_string());
+}
+
+
+TEST_F(get_with_siblings, value_update_after_null_resolution_produces_new_sibling)
+{
+    client.get_object("a", "document", response_handler);
+
+    // Prepare to handle the GET response with a NULL sibling.
+    auto null_result = std::shared_ptr<object>();
+    ON_CALL(sibling_resolution, evaluate(_)).WillByDefault(Return(null_result));
+    ::riak::value_updater add_value;
+    EXPECT_CALL(response_handler_mock, execute(
+            Eq(riak::make_error_code()),
+            IsNull(),
+            _))
+        .WillOnce(SaveArg<2>(&add_value));
+
+    // Server produces siblings
+    std::string encoded_response;
+    multi_value_get_response().SerializeToString(&encoded_response);
+    riak::message::wire_package wire_response(riak::message::code::GetResponse, encoded_response);
+    send_from_server(std::error_code(), wire_response.to_string().size(), wire_response.to_string());
+
+    // Prepare to capture a PUT to the server
+    std::string second_request_to_server;
+    EXPECT_CALL(transport, deliver(_, _))
+        .WillOnce(DoAll(
+                SaveArg<0>(&second_request_to_server),
+                SaveArg<1>(&send_from_server),
+                Return(std::bind(&mock::transport::device::option_to_terminate_request::exercise, &closure_signal))));
+
+    auto val = std::make_shared<object>();
+    val->set_value("something new!");
+
+    // Add a new value (PUT now)
+    mock::put_request::response_handler put_response_handler;
+    add_value(val, std::bind(&mock::put_request::response_handler::execute, &put_response_handler, std::placeholders::_1));
+
+    if (not second_request_to_server.empty()) {
+        RpbPutReq put_request;
+        if (message::retrieve(put_request, second_request_to_server.size(), second_request_to_server)) {
+            ASSERT_TRUE(not put_request.has_vclock());
+        } else {
+            ADD_FAILURE() << "The value updater did not produce a PUT request to the server; produced something else?";
+        }
+    } else {
+        ADD_FAILURE() << "The value updater did not produce any request to the server.";
+    }
+}
+
+
 TEST_F(get_with_siblings, resolved_sibling_is_returned_to_server)
 {
     client.get_object("a", "document", response_handler);
@@ -79,6 +148,8 @@ TEST_F(get_with_siblings, resolved_sibling_is_returned_to_server)
         RpbPutReq put_request;
         if (message::retrieve(put_request, second_request_to_server.size(), second_request_to_server)) {
             ASSERT_EQ(resolved_sibling->value(), put_request.content().value());
+            ASSERT_TRUE(put_request.has_vclock());
+            ASSERT_EQ(multi_value_get_response().vclock(), put_request.vclock());
             ASSERT_EQ(resolved_sibling->vtag(), put_request.content().vtag());
         } else {
             ADD_FAILURE() << "Sibling resolution produced something other than a PUT request to the server!";

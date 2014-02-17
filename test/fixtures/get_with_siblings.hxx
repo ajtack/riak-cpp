@@ -21,7 +21,7 @@ struct get_with_siblings
     typedef mock::get_request::response_handler mock_response_handler;
     
     testing::NiceMock<mock::transport::device> transport;
-    mock::sibling_resolution sibling_resolution;
+    testing::NiceMock<mock::sibling_resolution> sibling_resolution;
     boost::asio::io_service ios;
     riak::client client;
     mock_response_handler response_handler_mock;

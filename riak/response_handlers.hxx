@@ -14,8 +14,8 @@ typedef std::function<void(const std::error_code&)> put_response_handler;
  * a Riak store, this means remembering the bucket, key, and vector clock (most importantly) of a
  * fetched object.
  */
-typedef std::function<void(const std::shared_ptr<object>&, put_response_handler&)> value_updater;
-typedef std::function<void(const std::error_code&, std::shared_ptr<object>&, value_updater&)> get_response_handler;
+typedef std::function<void(const std::shared_ptr<object>&, put_response_handler)> value_updater;
+typedef std::function<void(const std::error_code&, std::shared_ptr<object>&, value_updater)> get_response_handler;
 
 //=============================================================================
 }   // namespace riak
