@@ -10,7 +10,7 @@ darwin_env = env.Clone()
 # detect which one were appropriate for our current version, or default to --std=c++11
 # if we're not using g++
 #
-if env['CXX'] == 'g++':
+if darwin_env['CXX'] == 'g++':
 	gxx_version = string.split(commands.getoutput(env['CXX'] + ' -dumpversion'), '.')
 	major, minor, sub = gxx_version[0], gxx_version[1], gxx_version[2]
 	if major < '4':
@@ -18,7 +18,7 @@ if env['CXX'] == 'g++':
 		Exit(1)
 	else:
 		if minor < '4':
-			print 'riak-cpp requires basic c++11 support, which is not supported by g++' + gxx_version
+			print 'riak-cpp requires basic c++11 support, which is not supported by g++ v' + string.join(gxx_version, '.')
 			Exit(1)
 		else:
 			if minor <= '6':
