@@ -29,7 +29,7 @@ static
 iterator next_partial_response (const iterator begin, const iterator end)
 {
     assert(end >= begin);
-    bool request_length_available = ((end - begin) >= sizeof(uint32_t));
+    bool request_length_available = ((end - begin) >= static_cast<int64_t>(sizeof(uint32_t)));
     
     if (request_length_available) {
         uint32_t encoded_length = *reinterpret_cast<const uint32_t*>(&*begin);
