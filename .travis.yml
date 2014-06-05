@@ -5,7 +5,7 @@ compiler:
 script: scons
 before_install:
  - sudo apt-get update -qq
- - sudo apt-get install -qq libprotobuf-dev libboost-all-dev
+ - sudo apt-get install -y libprotobuf-dev libboost1.54-all-dev
 env:
  - RIAK_CPP_BUILD_DEBUG=yes
  - RIAK_CPP_BUILD_DEBUG=no
