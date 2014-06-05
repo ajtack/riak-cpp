@@ -1,0 +1,13 @@
+language: cpp
+compiler:
+ - gcc
+ - clang
+script: scons
+before_install:
+ - sudo apt-get update -qq
+ - sudo apt-get install -qq libprotobuf-dev
+env:
+ - RIAK_CPP_BUILD_DEBUG=yes
+ - RIAK_CPP_BUILD_DEBUG=no
+matrix:
+  fast_finish: true

@@ -6,9 +6,18 @@ if environments is not None:
     release_env, debug_env = environments[0], environments[1]
 
     def build_variant(script_path, name, *additional_exports):
-        variant = 'debug' if ARGUMENTS.get('DEBUG') == 'yes' else 'release'
-        env = debug_env if variant == 'debug' else release_env
+        #
+        # Allow either command-line or environment selection of DEBUG build.
+        #
+        if ARGUMENTS.get('DEBUG', os.environ['RIAK_CPP_BUILD_DEBUG'] if 'RIAK_CPP_BUILD_DEBUG' in os.environ else 'no') == "yes":
+            variant = 'debug'
+        else:
+            variant = 'release'
 
+        #
+        # Every variant (release, debug, etc.) gets build into its own variant directory.
+        #
+        env = debug_env if variant == 'debug' else release_env
         variant_root = \
                 '#build' + os.sep + \
                 sys.platform + os.sep + \

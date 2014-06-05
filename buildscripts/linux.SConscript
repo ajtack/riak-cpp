@@ -32,9 +32,7 @@ else:
 # Prepare the variant environments.
 #
 naked_env.Append(
-		CPPPATH = ['/opt/local/include'],
 		CXXFLAGS = [cxx11_flag, '-DBOOST_ALL_DYN_LINK', '-Wall', '-Werror'],
-		LINKFLAGS = ['-L/opt/local/lib'],
 		LIBS = ['boost_log-mt', 'boost_log_setup-mt', 'boost_thread-mt', 'pthread', 'boost_system-mt', 'protobuf']
 	)
 
