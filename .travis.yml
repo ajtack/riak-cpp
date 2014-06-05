@@ -4,8 +4,9 @@ compiler:
  - clang
 script: scons
 before_install:
+ - sudo add-apt-repository ppa:boost-latest/ppa
  - sudo apt-get update -qq
- - sudo apt-get install -y libprotobuf-dev libboost1.54-all-dev
+ - sudo apt-get install -y libprotobuf-dev libboost1.55-all-dev
 env:
  - RIAK_CPP_BUILD_DEBUG=yes
  - RIAK_CPP_BUILD_DEBUG=no
