@@ -33,7 +33,7 @@ else:
 #
 naked_env.Append(
 		CXXFLAGS = [cxx11_flag, '-DBOOST_ALL_DYN_LINK', '-Wall', '-Werror'],
-		LIBS = ['boost_log-mt', 'boost_log_setup-mt', 'boost_thread-mt', 'pthread', 'boost_system-mt', 'protobuf']
+		LIBS = ['boost_log', 'boost_log_setup', 'boost_thread', 'pthread', 'boost_system', 'protobuf']
 	)
 
 release_env = naked_env.Clone()
