@@ -12,7 +12,7 @@ naked_env = env.Clone(CXX = os.environ['CXX'])
 #
 if naked_env['CXX'] == 'g++':
 	gxx_version = string.split(commands.getoutput(naked_env['CXX'] + ' -dumpversion'), '.')
-	major, minor, sub = gxx_version[0], gxx_version[1], gxx_version[2]
+	major, minor, sub = gxx_version[0], gxx_version[1], (gxx_version[2] if len(gxx_version) > 2 else 0)
 	if major < '4':
 		print "gcc 3.x is not supported"
 		Exit(1)
