@@ -7,19 +7,19 @@ Requirements
 
 For the purpose of more rapid development, as well as hopefully a positive API experience, Riak-Cpp's library and compiler requirements are a little bit high. Please take this into consideration, if you consider Riak for your own use.
 
- * **A C++11 compiler, at the level of GCC 4.4 or higher (including MSVC10)**
+ * **A C++11 compiler, at the level of GCC 4.6 or higher (including MSVC10)**
  
-    Riak uses both C++11 language features (e.g. type inference) and headers (e.g. `<chrono>`, and `std::bind` from `<functional>`). This decision was made to reduce the stringency of dependencies on Boost.
+    Riak uses both C++11 language features (e.g. type inference) and headers (e.g. `<chrono>`, and `std::bind` from `<functional>`).
  
- * **Boost >= v1.42 (>= v1.47 on MSVC10)**
+ * **Boost >= v1.54**
  
-    Notable libraries used include Asio, Optional and Thread. During development, Boost v1.46 is used for testing. We may reduce the requirements to earlier versions at some later point, but as of today that has not been tested. Windows requires the `boost::chrono` library, not available until v1.47.
+    Notable libraries used include Asio, Log, Optional, and Thread. Our CI runs against all versions since the introduction of boost::log in v1.54.
  
- * **SCons (for building on Linux)**
+ * **SCons (for building)**
  
     SCons made the buildscript writing process faster, for now. We are open to other systems. In the meantime, compiling shouldn't be hard if you need to write your own build scripts.
 
- * **Visual Studio 2010 (for building on Windows)**
+ * **Visual Studio 2010+ (for building on Windows)**
 
  * **Google Test and Google Mock (for building)**
  
@@ -44,7 +44,7 @@ To fetch or store an object using Riak-Cpp, you need to have four things set up:
 	        return new_content;
 	    }
     
-    You will apply sibling-resolution immediately upon construction of the Riak client.
+    You will apply sibling-resolution immediately upon construction of the Riak client. If you cannot resolve the siblings that you receive, returning an uninitialized `shared_ptr` (effectively _null_) will allow you to add a new sibling instead of updating. Application code (see below) will be unable to discern this from a _no-content_ response, though Riak-cpp will log a warning.
 
  2. **A result callback for the action you perform.** Riak-Cpp is asynchronous in all cases. As C++11 evolves, we will be able to use lambdas to shorten some cases, but for now we suggest defining functions like the below to handle your get and put responses.
 
@@ -100,6 +100,7 @@ In addition, the following are supported:
  * Timeouts for store accesses of any kind
  * Storage access paremeters (R, W, etc.) for all implemented operations.
  * Asynchronous behavior, allowing performant code
+ * Logging, using `boost::log` as an aggregator. You can use this to feed into your own logging library.
 
 Be sure to check out the Github [Issues](http://github.com/ajtack/riak-cpp/issues) to see what's planned next for development.
 
