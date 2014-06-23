@@ -58,7 +58,7 @@ TEST_F(get_with_siblings, null_resolution_result_yields_a_nonerror_result)
 {
     client.get_object("a", "document", response_handler);
 
-    // Prepare to handle the GET response.
+    // Prepare to handle the GET response, identifying a NULL sibling.
     auto null_result = std::shared_ptr<object>();
     ON_CALL(sibling_resolution, evaluate(_)).WillByDefault(Return(null_result));
     EXPECT_CALL(response_handler_mock, execute(
@@ -78,14 +78,11 @@ TEST_F(get_with_siblings, value_update_after_null_resolution_produces_new_siblin
 {
     client.get_object("a", "document", response_handler);
 
-    // Prepare to handle the GET response with a NULL sibling.
+    // Prepare to handle the GET response.
     auto null_result = std::shared_ptr<object>();
     ON_CALL(sibling_resolution, evaluate(_)).WillByDefault(Return(null_result));
     ::riak::value_updater add_value;
-    EXPECT_CALL(response_handler_mock, execute(
-            Eq(riak::make_error_code()),
-            IsNull(),
-            _))
+    EXPECT_CALL(response_handler_mock, execute(_, _, _))
         .WillOnce(SaveArg<2>(&add_value));
 
     // Server produces siblings

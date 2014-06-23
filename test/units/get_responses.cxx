@@ -89,7 +89,7 @@ TEST_F(getting_client, client_survives_extra_data_in_empty_get_response)
     EXPECT_CALL(closure_signal, exercise());
     EXPECT_CALL(response_handler_mock, execute(
             Eq(riak::make_error_code()),
-            Eq(std::shared_ptr<riak::object>()),
+            IsNull(),
             _));
     EXPECT_CALL(sibling_resolution, evaluate(_)).Times(0);
     send_from_server(std::error_code(), long_reply.size(), long_reply);
