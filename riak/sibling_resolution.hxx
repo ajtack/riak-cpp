@@ -1,5 +1,6 @@
 #pragma once
 #include <riak/riakclient.pb.h>
+#include <riak/core_types.hxx>
 
 //=============================================================================
 namespace riak {

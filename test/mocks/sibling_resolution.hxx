@@ -1,5 +1,6 @@
 #pragma once
 #include <gmock/gmock.h>
+#include <riak/sibling_resolution.hxx>
 
 //=============================================================================
 namespace riak {
