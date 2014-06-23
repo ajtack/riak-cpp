@@ -1,10 +1,9 @@
-Riak-Cpp v0.2
-=============
+## Riak-Cpp v0.2
 
 > Unreleased.
 
-Riak-Cpp now has Logging (#16)
-------------------------
+### Riak-Cpp now has Logging (#16)
+
 The previous release required deep understanding of the library in order to address any problems. A good server-side tool has good logging – now Riak-Cpp has it as well. Logging statements were added throughout the code using `boost::log`, verified by hand to provide a useful understanding of request progress.
 
 The `boost::log` library is a little bit new to the scene, so it's probably even unlikely that you're using it. Fortunately, by [implementing your own sink](http://boost-log.sourceforge.net/libs/log/doc/html/log/extension.html) (admittedly a bit of work) you can pipe the output of Riak-Cpp's logging wherever you need it. Furthermore, every log line produced is tagged with the request to which it applies, the timestamp, and a severity. The output of the unit tests (see `test/units/main.cxx`) is a good example of what kind of formatting is possible.
@@ -25,15 +24,16 @@ The `boost::log` library is a little bit new to the scene, so it's probably even
 	(test) [get_with_siblings]: ----------------------------------------------------------
 	(test) [get_with_siblings]: Test Complete!
 
-More Minor Changes
-------------------
+### Minor Changes
+
 These things were fixed along the way by the author and by the community.
 
  1. **Less Paranoid Networking** The _Single Serial Socket_ that Riak-Cpp provides by default is still not a tremendously effective socket pool, but it will now nevertheless function faster. Unless a request terminates in exception, the connection will be re-used instead of recycled.
  2. **Fixes for Deadlocks and Crashes** thanks to the contributions of @deanoc and @mcobzarenco.
 
-Riak-Cpp v0.1
-=============
+----
+
+## Riak-Cpp v0.1
 
 First versioned release of Riak-Cpp. The goal was correct key-value functionality with perfectly asynchronous requests.
 
