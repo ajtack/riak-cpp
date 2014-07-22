@@ -9,7 +9,7 @@ unit_tests_env = env.Clone()
 #
 # GoogleMock doesn't correctly detect the capabilities of gcc4.6 in particular.
 #
-if unit_tests_env['CXX'] == 'g++':
+if 'g++' in unit_tests_env['CXX']:
 	gxx_version = string.split(commands.getoutput(unit_tests_env['CXX'] + ' -dumpversion'), '.')
 	major, minor, sub = gxx_version[0], gxx_version[1], (gxx_version[2] if len(gxx_version) > 2 else 0)
 	if minor <= '6':
