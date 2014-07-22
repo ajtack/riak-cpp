@@ -10,7 +10,7 @@ naked_env = env.Clone(CXX = os.environ['CXX'])
 # detect which one were appropriate for our current version, or default to --std=c++11
 # if we're not using g++
 #
-if naked_env['CXX'] == 'g++':
+if 'g++' in naked_env['CXX']:
 	gxx_version = string.split(commands.getoutput(naked_env['CXX'] + ' -dumpversion'), '.')
 	major, minor, sub = gxx_version[0], gxx_version[1], (gxx_version[2] if len(gxx_version) > 2 else 0)
 	if major < '4':

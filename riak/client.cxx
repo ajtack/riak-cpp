@@ -257,7 +257,7 @@ bool client::request_runner::accept_get_response (
     // A possible response in several cases.
     std::shared_ptr<object> no_content;
     value_updater no_value_updater;
-    auto report_error = std::bind(respond_to_application, _1, no_content, no_value_updater);
+    std::function<void(const std::error_code&)> report_error = std::bind(respond_to_application, _1, no_content, no_value_updater);
 
     if (not error) {
         log(log::severity::trace) << "Parsing server response ...";
