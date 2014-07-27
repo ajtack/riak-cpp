@@ -10,20 +10,26 @@ For the purpose of more rapid development, as well as hopefully a positive API e
  * **A C++11 compiler, at the level of GCC 4.6 or higher (including MSVC10)**
  
     Riak uses both C++11 language features (e.g. type inference) and headers (e.g. `<chrono>`, and `std::bind` from `<functional>`).
+
+    Note that while we do not target GCC v4.4, compatibility with it has so far been easily maintained. You can check whether gcc4.4 builds are green in Travis.
  
  * **Boost >= v1.54**
  
     Notable libraries used include Asio, Log, Optional, and Thread. Our CI runs against all versions since the introduction of boost::log in v1.54.
+
+    *Earlier versions of Boost* tested back to v1.46.1 are compatible _only when logging is disabled during compilation._ Logging is a tremendously useful tool for understanding the system you have built, and this is especially important for high-throughput systems. As such, we recommend leaving it enabled wherever possible.
  
  * **SCons (for building)**
  
-    SCons made the buildscript writing process faster, for now. We are open to other systems. In the meantime, compiling shouldn't be hard if you need to write your own build scripts.
+    SCons made the buildscript writing process faster, for now. We are open to other systems. In the meantime, compiling shouldn't be hard if you need to write your own build scripts. SCons is also the preferred build system on Windows.
+
+    Available compile-time switches include:
+
+ 	 * `--with-logging=[yes|no]`: Offers the option of excluding logging features together with any dependency on `boost::log`.
+ 	 * `--with-msvc-version=[10.0|11.0|12.0]`: Allows selection of a particular toolchain (Windows only).
+ 	 * `--address-model=[x86|amd64]`: Allows cross-compiling on platforms where this is supported by SCons (Windows, in particular). See the HOST_ARCH switch in the SCons manual.
 
  * **Visual Studio 2010+ (for building on Windows)**
-
- * **Google Test and Google Mock (for building)**
- 
-    We have found here a use for unit testing, which is greatly facilitated by these two libraries.
 
 Quick Start Guide
 =================
