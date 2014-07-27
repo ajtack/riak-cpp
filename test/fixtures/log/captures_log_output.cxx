@@ -1,3 +1,8 @@
+// Note: no implementation required unless logging is enabled.
+//
+#include <riak/config.hxx>
+#if RIAK_CPP_LOGGING_ENABLED
+
 #include "captures_log_output.hxx"
 #include <boost/log/core/core.hpp>
 #include <test/fixtures/log/test_channel.hxx>
@@ -36,3 +41,5 @@ captures_log_output::~captures_log_output ()
 	}   // namespace test
 }   // namespace riak
 //=============================================================================
+
+#endif

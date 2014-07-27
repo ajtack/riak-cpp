@@ -8,9 +8,12 @@
 #include <gtest/gtest.h>
 #include <riak/message.hxx>
 #include <test/fixtures/get_and_put_client.hxx>
-#include <test/matchers/has_attribute.hxx>
-#include <test/matchers/log_record_attribute_set.hxx>
 #include <system_error>
+
+#if RIAK_CPP_LOGGING_ENABLED
+#   include <test/matchers/has_attribute.hxx>
+#   include <test/matchers/log_record_attribute_set.hxx>
+#endif
 
 using namespace ::testing;
 using riak::test::fixture::get_and_put_client;
@@ -82,10 +85,11 @@ TEST_F(get_and_put_client, client_receives_socket_errors_from_object_update)
     val->set_value("balooooooga!");
     update_value(val, put_response_handler);
 
-
-    // Require at least one error line in logs.
-    using riak::log::severity;
-    EXPECT_CALL(log_sinks, consume(LogRecordAttributeSet(HasAttribute<severity>("Severity", Eq(severity::error)))));    
+#   if RIAK_CPP_LOGGING_ENABLED
+        // Require at least one error line in logs.
+        using riak::log::severity;
+        EXPECT_CALL(log_sinks, consume(LogRecordAttributeSet(HasAttribute<severity>("Severity", Eq(severity::error)))));    
+#   endif
 
     // Respond to the PUT server.
     EXPECT_CALL(put_response_handler_mock, execute(Eq(std::make_error_code(std::errc::connection_reset))));
@@ -114,9 +118,11 @@ TEST_F(get_and_put_client, client_survives_wrong_code_reply_upon_object_update)
     val->set_value("balooooooga!");
     update_value(val, put_response_handler);
 
-    // Require at least one error line in logs -- this is highly irregular.
-    using riak::log::severity;
-    EXPECT_CALL(log_sinks, consume(LogRecordAttributeSet(HasAttribute<severity>("Severity", Eq(severity::error)))));
+#   if RIAK_CPP_LOGGING_ENABLED
+        // Require at least one error line in logs -- this is highly irregular.
+        using riak::log::severity;
+        EXPECT_CALL(log_sinks, consume(LogRecordAttributeSet(HasAttribute<severity>("Severity", Eq(severity::error)))));
+#   endif
     
     // Respond to the PUT server.
     EXPECT_CALL(put_response_handler_mock, execute(Eq(riak::make_error_code(communication_failure::unparseable_response))));
@@ -307,80 +313,82 @@ TEST_F(get_and_put_client, client_correctly_delivers_put_reply_with_vector_clock
     }
 }
 
+#if RIAK_CPP_LOGGING_ENABLED
+    TEST_F(get_and_put_client, cold_object_update_after_get_gets_new_application_request_id)
+    {
+        using riak::log::request_id_type;
+        ::riak::value_updater update_value;
 
-TEST_F(get_and_put_client, cold_object_update_after_get_gets_new_application_request_id)
-{
-    using riak::log::request_id_type;
-    ::riak::value_updater update_value;
+        // Capture the first log record from the GET portion of the request.
+        boost::log::record_view original_get_log_record;
+        EXPECT_CALL(log_sinks, consume(LogRecordAttributeSet(HasAttribute("Riak/ClientRequestId", A<request_id_type>()))))
+            .WillOnce(SaveArg<0>(&original_get_log_record))
+            .RetiresOnSaturation();
+        client.get_object("a", "document", get_response_handler);
 
-    // Capture the first log record from the GET portion of the request.
-    boost::log::record_view original_get_log_record;
-    EXPECT_CALL(log_sinks, consume(LogRecordAttributeSet(HasAttribute("Riak/ClientRequestId", A<request_id_type>()))))
-        .WillOnce(SaveArg<0>(&original_get_log_record))
-        .RetiresOnSaturation();
-    client.get_object("a", "document", get_response_handler);
+        // Respond to the GET.
+        EXPECT_CALL(get_response_handler_mock, execute(Eq(riak::make_error_code()), _, _))
+                .Times(AnyNumber())
+                .WillOnce(SaveArg<2>(&update_value));
+        EXPECT_CALL(close_request_1, exercise())
+                .Times(AnyNumber());
+        request_handler_1(std::error_code(), clean_fetch_reply().size(), clean_fetch_reply());
 
-    // Respond to the GET.
-    EXPECT_CALL(get_response_handler_mock, execute(Eq(riak::make_error_code()), _, _))
-            .Times(AnyNumber())
-            .WillOnce(SaveArg<2>(&update_value));
-    EXPECT_CALL(close_request_1, exercise())
-            .Times(AnyNumber());
-    request_handler_1(std::error_code(), clean_fetch_reply().size(), clean_fetch_reply());
+        // Update the value: check that this yields a new request ID.
+        const auto& original_record_attributes = original_get_log_record.attribute_values();
+        const auto old_request_id = original_record_attributes["Riak/ClientRequestId"].extract<request_id_type>();
+        EXPECT_CALL(log_sinks, consume(LogRecordAttributeSet(
+                    HasAttribute<request_id_type>("Riak/ClientRequestId", Ne(old_request_id)))))
+                .Times(AtLeast(1));
 
-    // Update the value: check that this yields a new request ID.
-    const auto& original_record_attributes = original_get_log_record.attribute_values();
-    const auto old_request_id = original_record_attributes["Riak/ClientRequestId"].extract<request_id_type>();
-    EXPECT_CALL(log_sinks, consume(LogRecordAttributeSet(
-                HasAttribute<request_id_type>("Riak/ClientRequestId", Ne(old_request_id)))))
-            .Times(AtLeast(1));
+        auto val = std::make_shared<object>();
+        val->set_value("tuhetueo");
+        ON_CALL(put_response_handler_mock, execute(Eq(riak::make_error_code()))).WillByDefault(Return());
+        ON_CALL(close_request_2, exercise()).WillByDefault(Return());
+        update_value(val, put_response_handler);
+    }
+#endif
 
-    auto val = std::make_shared<object>();
-    val->set_value("tuhetueo");
-    ON_CALL(put_response_handler_mock, execute(Eq(riak::make_error_code()))).WillByDefault(Return());
-    ON_CALL(close_request_2, exercise()).WillByDefault(Return());
-    update_value(val, put_response_handler);
-}
+#if RIAK_CPP_LOGGING_ENABLED
+    TEST_F(get_and_put_client, warm_object_update_after_get_gets_new_application_request_id)
+    {
+        using riak::log::request_id_type;
+        ::riak::value_updater update_value;
 
+        // !!! Take a reply with actual data and a vector clock.
+        //
+        const auto fetch_reply = content_laden_fetch_reply();
 
-TEST_F(get_and_put_client, warm_object_update_after_get_gets_new_application_request_id)
-{
-    using riak::log::request_id_type;
-    ::riak::value_updater update_value;
+        // Capture the first log record from the GET portion of the request.
+        boost::log::record_view original_get_log_record;
+        EXPECT_CALL(log_sinks, consume(LogRecordAttributeSet(HasAttribute("Riak/ClientRequestId", A<request_id_type>()))))
+            .WillOnce(SaveArg<0>(&original_get_log_record))
+            .RetiresOnSaturation();
+        client.get_object("a", "document", get_response_handler);
 
-    // !!! Take a reply with actual data and a vector clock.
-    //
-    const auto fetch_reply = content_laden_fetch_reply();
+        // Respond to the GET.
+        EXPECT_CALL(get_response_handler_mock, execute(Eq(riak::make_error_code()), _, _))
+                .Times(AnyNumber())
+                .WillOnce(SaveArg<2>(&update_value));
+        EXPECT_CALL(close_request_1, exercise())
+                .Times(AnyNumber());
+        const auto fetch_reply_data = as_wire_request_data(fetch_reply, riak::message::code::GetResponse);
+        request_handler_1(std::error_code(), fetch_reply_data.size(), fetch_reply_data);
 
-    // Capture the first log record from the GET portion of the request.
-    boost::log::record_view original_get_log_record;
-    EXPECT_CALL(log_sinks, consume(LogRecordAttributeSet(HasAttribute("Riak/ClientRequestId", A<request_id_type>()))))
-        .WillOnce(SaveArg<0>(&original_get_log_record))
-        .RetiresOnSaturation();
-    client.get_object("a", "document", get_response_handler);
+        // Update the value: check that this yields a new request ID.
+        const auto& original_record_attributes = original_get_log_record.attribute_values();
+        const auto old_request_id = original_record_attributes["Riak/ClientRequestId"].extract<request_id_type>();
+        EXPECT_CALL(log_sinks, consume(LogRecordAttributeSet(
+                    HasAttribute<request_id_type>("Riak/ClientRequestId", Ne(old_request_id)))))
+                .Times(AtLeast(1));
 
-    // Respond to the GET.
-    EXPECT_CALL(get_response_handler_mock, execute(Eq(riak::make_error_code()), _, _))
-            .Times(AnyNumber())
-            .WillOnce(SaveArg<2>(&update_value));
-    EXPECT_CALL(close_request_1, exercise())
-            .Times(AnyNumber());
-    const auto fetch_reply_data = as_wire_request_data(fetch_reply, riak::message::code::GetResponse);
-    request_handler_1(std::error_code(), fetch_reply_data.size(), fetch_reply_data);
-
-    // Update the value: check that this yields a new request ID.
-    const auto& original_record_attributes = original_get_log_record.attribute_values();
-    const auto old_request_id = original_record_attributes["Riak/ClientRequestId"].extract<request_id_type>();
-    EXPECT_CALL(log_sinks, consume(LogRecordAttributeSet(
-                HasAttribute<request_id_type>("Riak/ClientRequestId", Ne(old_request_id)))))
-            .Times(AtLeast(1));
-
-    auto val = std::make_shared<object>();
-    val->set_value("tuhetueo");
-    ON_CALL(put_response_handler_mock, execute(Eq(riak::make_error_code()))).WillByDefault(Return());
-    ON_CALL(close_request_2, exercise()).WillByDefault(Return());
-    update_value(val, put_response_handler);
-}
+        auto val = std::make_shared<object>();
+        val->set_value("tuhetueo");
+        ON_CALL(put_response_handler_mock, execute(Eq(riak::make_error_code()))).WillByDefault(Return());
+        ON_CALL(close_request_2, exercise()).WillByDefault(Return());
+        update_value(val, put_response_handler);
+    }
+#endif
 
 //=============================================================================
     }   // namespace test

@@ -10,7 +10,7 @@ naked_env = env.Clone(CXX = os.environ['CXX'])
 # detect which one were appropriate for our current version, or default to --std=c++11
 # if we're not using g++
 #
-if 'g++' in naked_env['CXX']:
+if naked_env['CXX'].startswith('g++'):
 	gxx_version = string.split(commands.getoutput(naked_env['CXX'] + ' -dumpversion'), '.')
 	major, minor, sub = gxx_version[0], gxx_version[1], (gxx_version[2] if len(gxx_version) > 2 else 0)
 	if major < '4':
@@ -33,8 +33,11 @@ else:
 #
 naked_env.Append(
 		CXXFLAGS = [cxx11_flag, '-DBOOST_ALL_DYN_LINK', '-Wall', '-Werror'],
-		LIBS = ['boost_log', 'boost_log_setup', 'boost_thread', 'pthread', 'boost_system', 'protobuf']
+		LIBS = ['boost_thread', 'pthread', 'boost_system', 'protobuf']
 	)
+
+if GetOption('with_logging') == 'yes':
+	naked_env.Append(LIBS = ['boost_log', 'boost_log_setup'])
 
 release_env = naked_env.Clone()
 debug_env = naked_env.Clone()

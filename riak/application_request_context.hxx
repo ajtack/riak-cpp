@@ -1,7 +1,13 @@
 #pragma once
-#include <boost/log/keywords/severity.hpp>
-#include <boost/log/sources/record_ostream.hpp>
-#include <boost/log/utility/manipulators/add_value.hpp>
+#include <riak/config.hxx>
+#if RIAK_CPP_LOGGING_ENABLED
+#	include <boost/log/keywords/severity.hpp>
+#	include <boost/log/sources/record_ostream.hpp>
+#	include <boost/log/utility/manipulators/add_value.hpp>
+#else
+#	include <riak/log_null.hxx>
+#endif
+
 #include <boost/uuid/random_generator.hpp>
 #include <boost/uuid/uuid_io.hpp>
 #include <riak/compat.hxx>
@@ -46,45 +52,67 @@ struct application_request_context
 		return application_request_context(this->access_overrides, this->request_failure_defaults);
 	}
 
-	/*!
-	 * Behaves exactly as boost::log::record_ostream, but guarantees that the record is
-	 * pushed on termination.
-	 */
-	template <typename Logger>
-	class automatic_record_ostream
-		  : public boost::log::record_ostream
-	{
-	  public:
-		automatic_record_ostream (boost::log::record&& record, Logger& logger)
-		  :	record_(std::move(record))
-		  ,	stream_(new boost::log::record_ostream(record_))
-		  ,	logger_(logger)
+#	if RIAK_CPP_LOGGING_ENABLED
+		/*!
+		 * Behaves exactly as boost::log::record_ostream, but guarantees that the record is
+		 * pushed on termination.
+		 */
+		template <typename Logger>
+		class automatic_record_ostream
+			  : public boost::log::record_ostream
 		{
-			assert(record_);
-		}
+		  public:
+			automatic_record_ostream (boost::log::record&& record, Logger& logger)
+			  :	record_(std::move(record))
+			  ,	stream_(new boost::log::record_ostream(record_))
+			  ,	logger_(logger)
+			{
+				assert(record_);
+			}
 
-		automatic_record_ostream (automatic_record_ostream&& other)
-		  :	record_(std::move(other.record_))
-		  ,	stream_(std::move(other.stream_))
-		  ,	logger_(other.logger_)
-		{	}
+			automatic_record_ostream (automatic_record_ostream&& other)
+			  :	record_(std::move(other.record_))
+			  ,	stream_(std::move(other.stream_))
+			  ,	logger_(other.logger_)
+			{	}
 
-		~automatic_record_ostream () RIAK_CPP_NOEXCEPT {
-			if (record_)
-				logger_.push_record(std::move(record_));
-		}
+			~automatic_record_ostream () RIAK_CPP_NOEXCEPT {
+				if (record_)
+					logger_.push_record(std::move(record_));
+			}
 
-		template <typename T>
-		automatic_record_ostream& operator<< (T t) {
-			*stream_ << t;
-			return *this;
-		}
+			template <typename T>
+			automatic_record_ostream& operator<< (T t) {
+				*stream_ << t;
+				return *this;
+			}
 
-	  private:
-		boost::log::record record_;
-		std::unique_ptr<boost::log::record_ostream> stream_;
-		Logger& logger_;
-	};
+		  private:
+			boost::log::record record_;
+			std::unique_ptr<boost::log::record_ostream> stream_;
+			Logger& logger_;
+		};
+#	else
+		/*!
+		 * Matches the interface of a well-behaved boost::log::record_ostream, but doesn't
+		 * depend on that class's definition and has no effect.
+		 */
+		template <typename Logger>
+		class automatic_record_ostream
+		{
+		  public:
+			automatic_record_ostream (riak::log::null::log_record&&, Logger&)
+			{	}
+
+			~automatic_record_ostream () RIAK_CPP_NOEXCEPT
+			{	}
+
+			template <typename T>
+			automatic_record_ostream& operator << (T) {
+				return *this;
+			}
+		};
+#	endif
 
 	template <typename Logger>
 	automatic_record_ostream<Logger> log (Logger& logger, riak::log::severity severity = riak::log::severity::info) const

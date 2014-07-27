@@ -5,6 +5,12 @@ platform_buildscript = 'buildscripts' + os.sep + sys.platform + '.SConscript'
 if os.path.exists(platform_buildscript):
 	print "Building for platform " + sys.platform
 
+	AddOption('--with-logging',
+	          dest='with_logging',
+	          default='yes',
+	          type='choice',
+	          choices=['yes', 'no'])
+
 	# Only has effect under win32, obviously.
 	AddOption('--with-msvc-version',
 	          dest='msvc_version',
@@ -24,7 +30,8 @@ if os.path.exists(platform_buildscript):
 	basic_env = Environment(
 	        MSVC_VERSION = GetOption('msvc_version'),
 	        TARGET_ARCH = GetOption('address_model'),
-	        ENV = os.environ
+	        ENV = os.environ,
+	        CXXFLAGS = ['-DRIAK_CPP_LOGGING_ENABLED=' + ('1' if GetOption('with_logging') == 'yes' else '0')]
 		)
 
 	if ARGUMENTS.get('VERBOSE') != 'yes':

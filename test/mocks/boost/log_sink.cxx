@@ -1,3 +1,8 @@
+// Note: no implementation required unless logging is enabled.
+//
+#include <riak/config.hxx>
+#if RIAK_CPP_LOGGING_ENABLED
+
 #include "log_sink.hxx"
 
 //=============================================================================
@@ -21,3 +26,5 @@ log_sink::~log_sink ()
 	}   // namespace mock
 }   // namespace riak
 //=============================================================================
+
+#endif

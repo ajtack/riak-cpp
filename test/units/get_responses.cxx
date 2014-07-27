@@ -7,9 +7,12 @@
 #include <gtest/gtest.h>
 #include <riak/message.hxx>
 #include <test/fixtures/getting_client.hxx>
-#include <test/matchers/has_attribute.hxx>
-#include <test/matchers/log_record_attribute_set.hxx>
 #include <system_error>
+
+#if RIAK_CPP_LOGGING_ENABLED
+#   include <test/matchers/has_attribute.hxx>
+#   include <test/matchers/log_record_attribute_set.hxx>
+#endif
 
 using namespace ::testing;
 using riak::test::fixture::getting_client;
@@ -28,9 +31,11 @@ TEST_F(getting_client, client_receives_socket_errors)
     EXPECT_CALL(closure_signal, exercise());
     EXPECT_CALL(response_handler_mock, execute(Eq(std::make_error_code(std::errc::connection_reset)), _, _));
 
-    // Require at least one error line in logs.
-    using riak::log::severity;
-    EXPECT_CALL(log_sinks, consume(LogRecordAttributeSet(HasAttribute<severity>("Severity", Eq(severity::error)))));    
+#   if RIAK_CPP_LOGGING_ENABLED
+        // Require at least one error line in logs.
+        using riak::log::severity;
+        EXPECT_CALL(log_sinks, consume(LogRecordAttributeSet(HasAttribute<severity>("Severity", Eq(severity::error)))));    
+#   endif
 
     std::string garbage("uhetnaoutaenosueosaueoas");
     send_from_server(std::make_error_code(std::errc::connection_reset), garbage.size(), garbage);
@@ -69,9 +74,11 @@ TEST_F(getting_client, client_survives_wrong_code_reply_to_get)
             _));
     EXPECT_CALL(sibling_resolution, evaluate(_)).Times(0);
 
-    // Require at least one error line in logs -- this is highly irregular behavior.
-    using riak::log::severity;
-    EXPECT_CALL(log_sinks, consume(LogRecordAttributeSet(HasAttribute<severity>("Severity", Eq(severity::error)))));
+#   if RIAK_CPP_LOGGING_ENABLED
+        // Require at least one error line in logs -- this is highly irregular behavior.
+        using riak::log::severity;
+        EXPECT_CALL(log_sinks, consume(LogRecordAttributeSet(HasAttribute<severity>("Severity", Eq(severity::error)))));    
+#   endif
 
     send_from_server(std::error_code(), bad_reply.to_string().size(), bad_reply.to_string());
 }
@@ -187,12 +194,14 @@ TEST_F(getting_client, client_returns_single_object_with_no_vector_clock)
             Pointee(Property(&riak::object::value, StrEq(nonempty_get_response.content(0).value()))),
             _));
 
-    // Require at least one warning about siblings in logs.
-    using riak::log::severity;
-    EXPECT_CALL(log_sinks, consume(
-            AllOf(
-                LogRecordAttributeSet(HasAttribute<severity>("Severity", Eq(severity::warning))),
-                LogRecordAttributeSet(HasAttribute<std::string>("Message", MatchesRegex(".*siblings?.*"))))));
+#   if RIAK_CPP_LOGGING_ENABLED
+        // Require at least one warning about siblings in logs.
+        using riak::log::severity;
+        EXPECT_CALL(log_sinks, consume(
+                AllOf(
+                    LogRecordAttributeSet(HasAttribute<severity>("Severity", Eq(severity::warning))),
+                    LogRecordAttributeSet(HasAttribute<std::string>("Message", MatchesRegex(".*siblings?.*"))))));
+#   endif
 
     send_from_server(std::error_code(), data.size(), data);
 }

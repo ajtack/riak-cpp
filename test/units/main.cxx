@@ -1,15 +1,22 @@
-#include <boost/log/expressions.hpp>
-#include <boost/log/expressions/formatters/date_time.hpp>
-#include <boost/log/expressions/formatters/if.hpp>
-#include <boost/log/expressions/keyword.hpp>
-#include <boost/log/support/date_time.hpp>
-#include <boost/log/utility/formatting_ostream.hpp>
-#include <boost/log/utility/setup/common_attributes.hpp>
-#include <boost/log/utility/setup/file.hpp>
-#include <boost/uuid/uuid_io.hpp>
+#if RIAK_CPP_LOGGING_ENABLED
+#   include <boost/log/expressions.hpp>
+#   include <boost/log/expressions/formatters/date_time.hpp>
+#   include <boost/log/expressions/formatters/if.hpp>
+#   include <boost/log/expressions/keyword.hpp>
+#   include <boost/log/support/date_time.hpp>
+#   include <boost/log/utility/formatting_ostream.hpp>
+#   include <boost/log/utility/setup/common_attributes.hpp>
+#   include <boost/log/utility/setup/file.hpp>
+#   include <boost/uuid/uuid_io.hpp>
+#endif
+
 #include <gtest/gtest.h>
 #include <riak/log.hxx>
-#include <test/fixtures/logs_test_name.hxx>
+#include <test/fixtures/log/logs_test_name.hxx>
+
+// Where logging is enabled, shape test output beautifully.
+//
+#if RIAK_CPP_LOGGING_ENABLED
 
 //=============================================================================
 namespace riak {
@@ -98,10 +105,15 @@ void divert_all_logs_to_file (const std::string& filename)
 }   // namespace (anonymous)
 //=============================================================================
 
+#endif
+
 int main (int argc, char* argv[])
 {
     ::testing::InitGoogleTest(&argc, argv);
-    divert_all_logs_to_file("units.log");
+
+#   if RIAK_CPP_LOGGING_ENABLED
+        divert_all_logs_to_file("units.log");
+#   endif
 
     return RUN_ALL_TESTS();
 }

@@ -1,7 +1,7 @@
 #pragma once
 #include <boost/asio/io_service.hpp>
 #include <riak/application_request_context.hxx>
-#include <test/fixtures/logs_test_name.hxx>
+#include <test/fixtures/log/logs_test_name.hxx>
 #include <test/fixtures/log/captures_log_output.hxx>
 #include <test/mocks/transport.hxx>
 

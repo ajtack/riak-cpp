@@ -1,18 +1,46 @@
 language: cpp
 compiler:
  - gcc
-script: scons
+ - clang
+script: scons --with-logging=$LOGGING_ENABLED
 before_install:
  - sudo add-apt-repository -y ppa:boost-latest/ppa
  - sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
  - sudo apt-get update -qq
 install:
- - sudo apt-get install -y libprotobuf-dev protobuf-compiler libboost$BOOST_VERSION-all-dev g++-4.4
- - export CXX="g++-4.4"
-env:
- - RIAK_CPP_BUILD_DEBUG=yes BOOST_VERSION=1.54
- - RIAK_CPP_BUILD_DEBUG=yes BOOST_VERSION=1.55
- - RIAK_CPP_BUILD_DEBUG=no  BOOST_VERSION=1.54
- - RIAK_CPP_BUILD_DEBUG=no  BOOST_VERSION=1.55
+ - sudo apt-get install -y libprotobuf-dev protobuf-compiler libboost$BOOST_VERSION-all-dev
+ - if [ ! -z "$GCC_VERSION" ]; then sudo apt-get install -y g++-$GCC_VERSION; export CXX="g++-$GCC_VERSION"; fi
 matrix:
+  include:
+    # Primary targets.
+    - compiler: clang
+      env: RIAK_CPP_BUILD_DEBUG=yes BOOST_VERSION=1.55 LOGGING_ENABLED=yes
+    - compiler: clang
+      env: RIAK_CPP_BUILD_DEBUG=no  BOOST_VERSION=1.55 LOGGING_ENABLED=yes
+    - compiler: gcc
+      env: GCC_VERSION=4.6 RIAK_CPP_BUILD_DEBUG=yes BOOST_VERSION=1.55 LOGGING_ENABLED=yes
+    - compiler: gcc
+      env: GCC_VERSION=4.6 RIAK_CPP_BUILD_DEBUG=no  BOOST_VERSION=1.55 LOGGING_ENABLED=yes
+    - compiler: gcc
+      env: GCC_VERSION=4.8 RIAK_CPP_BUILD_DEBUG=yes BOOST_VERSION=1.55 LOGGING_ENABLED=yes
+    - compiler: gcc
+      env: GCC_VERSION=4.8 RIAK_CPP_BUILD_DEBUG=no  BOOST_VERSION=1.55 LOGGING_ENABLED=yes
+
+    # Duplicated -- these are the allowed failures.
+    - compiler: gcc
+      env: GCC_VERSION=4.4 BOOST_VERSION=1.55 LOGGING_ENABLED=yes
+    - compiler: gcc
+      env: GCC_VERSION=4.4 BOOST_VERSION=1.46 LOGGING_ENABLED=no
+
+  allow_failures:
+    - compiler: gcc
+      env: GCC_VERSION=4.4 BOOST_VERSION=1.55 LOGGING_ENABLED=yes
+    - compiler: gcc
+      env: GCC_VERSION=4.4 BOOST_VERSION=1.46 LOGGING_ENABLED=no
+
+  exclude:
+    # These are the 'naked' builds, otherwise attempted without any environment at all.
+    - compiler: clang
+    - compiler: gcc
+
   fast_finish: true

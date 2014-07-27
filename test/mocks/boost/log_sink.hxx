@@ -1,4 +1,10 @@
 #pragma once
+
+// Note: no such mock required unless logging is enabled.
+//
+#include <riak/config.hxx>
+#if RIAK_CPP_LOGGING_ENABLED
+
 #include <boost/log/attributes/attribute_value_set.hpp>
 #include <boost/log/core/record_view.hpp>
 #include <boost/log/sinks/sink.hpp>
@@ -28,3 +34,5 @@ class log_sink
 	}   // namespace mock
 }   // namespace riak
 //=============================================================================
+
+#endif

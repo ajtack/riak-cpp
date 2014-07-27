@@ -1,3 +1,8 @@
+// Note: no implementation required unless logging is enabled.
+//
+#include <riak/config.hxx>
+#if RIAK_CPP_ENABLE_LOGGING
+
 #include "logs_test_name.hxx"
 #include <boost/log/trivial.hpp>
 #include <boost/log/attributes/function.hpp>
@@ -86,3 +91,5 @@ void logs_test_name::TearDown ()
 	}   // namespace test
 }   // namespace riak
 //=============================================================================
+
+#endif

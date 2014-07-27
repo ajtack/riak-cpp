@@ -5,7 +5,13 @@
 #   include <boost/preprocessor/repetition/enum_binary_params.hpp>
 #endif
 
+#include <riak/config.hxx>
+#if RIAK_CPP_LOGGING_ENABLED
 #include <boost/log/sources/severity_channel_logger.hpp>
+#else
+#include <riak/log_null.hxx>
+#endif
+
 #include <memory>
 #include <riak/log.hxx>
 #include <riak/message.hxx>
@@ -64,7 +70,11 @@ class client
     boost::asio::io_service& ios_;
 
     /*! Logs all riak request-related activity (identified by riak::log::channel::core). */
-    boost::log::sources::severity_channel_logger_mt<log::severity, log::channel> log_;
+#   if RIAK_CPP_LOGGING_ENABLED
+        boost::log::sources::severity_channel_logger_mt<log::severity, log::channel> log_;
+#   else
+        riak::log::null::logger log_;
+#   endif
 
   protected:
     class request_runner;

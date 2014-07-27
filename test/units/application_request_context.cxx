@@ -1,3 +1,13 @@
+/*!
+ * \file
+ * Tests whether logging is properly shaped and decorated by the application_request_context class.
+ */
+
+//
+// None of these tests make any sense if logging is disabled.
+// 
+#if RIAK_CPP_LOGGING_ENABLED
+
 #include <boost/log/sources/logger.hpp>
 #include <boost/log/sources/severity_logger.hpp>
 #include <test/actions/save_log_attribute.hxx>
@@ -69,3 +79,5 @@ TEST_F(application_request_context, applies_info_level_severity_to_log_lines_by_
 	}   // namespace test
 }   // namespace riak
 //=============================================================================
+
+#endif
