@@ -1,6 +1,12 @@
 ## Riak-Cpp v0.2
 
-> Unreleased.
+> Released July 30th, 2014
+
+This release is compatible with:
+
+ * gcc 4.4, 4.6, 4.8
+ * clang 3.3, 3.4
+ * Boost v1.54+ (Boost v1.46+ when compiled without logging)
 
 ### Riak-Cpp now has Logging (#16)
 
@@ -23,6 +29,8 @@ The `boost::log` library is a little bit new to the scene, so it's probably even
 	---- (riak/core) 2014-06-23 12:37:17.068459     INFO [r:19558c67-be15-4efd-be7f-9cd815c140fd]: GET successful after applying sibling resolution.
 	(test) [get_with_siblings]: ----------------------------------------------------------
 	(test) [get_with_siblings]: Test Complete!
+
+If you're on a legacy compiler or using an older version of boost, this feature is unavailable for the time-being. You can exclude it from your build of Riak-cpp by applying the `--with-logging=no` option to scons.
 
 ### Minor Changes
 
