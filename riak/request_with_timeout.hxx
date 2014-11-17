@@ -1,5 +1,4 @@
 #pragma once
-#include <boost/asio/deadline_timer.hpp>
 #include <boost/thread/mutex.hpp>
 #include <boost/optional.hpp>
 #include <memory>
@@ -14,8 +13,11 @@
 #	include <chrono>
 #endif
 
-namespace boost {
-	namespace asio { class io_service; }
+namespace riak {
+	namespace utility {
+		class timer;
+		class timer_factory;
+	}
 }
 
 //=============================================================================
@@ -35,7 +37,9 @@ class request_with_timeout
 			const std::string& data,
 			std::chrono::milliseconds timeout,
 			message::buffering_handler& h,
-			boost::asio::io_service& ios);
+			utility::timer_factory& timer_factory);
+
+	~request_with_timeout ();
 	
 	/*!
 	 * Sends the request and begins listening for a response asynchronously. Timeout countdown starts now.
@@ -46,11 +50,11 @@ class request_with_timeout
 
   private:
 	void on_response (std::error_code, std::size_t, const std::string&);
-	void on_timeout (const boost::system::error_code&);
+	void on_timeout (const std::error_code&);
 	  
 	mutable boost::mutex mutex_;
 	std::chrono::milliseconds timeout_length_;
-	boost::asio::deadline_timer timeout_;
+	std::unique_ptr<utility::timer> timer_;
 	message::buffering_handler response_callback_;
 	boost::optional<transport::option_to_terminate_request> terminate_request_;
 	const std::string request_data_;

@@ -1,5 +1,7 @@
+#include "request_with_timeout.hxx"
 #include <riak/error.hxx>
-#include <riak/request_with_timeout.hxx>
+#include <riak/utility/timer.hxx>
+#include <riak/utility/timer_factory.hxx>
 
 //=============================================================================
 namespace riak {
@@ -16,14 +18,18 @@ request_with_timeout::request_with_timeout (
 		const std::string& data,
 		std::chrono::milliseconds timeout,
 		message::buffering_handler& h,
-		boost::asio::io_service& ios)
+		utility::timer_factory& timer_factory)
   : timeout_length_(timeout)
-  , timeout_(ios)
+  , timer_(timer_factory.create())
   , response_callback_(h)
   , request_data_(data)
   , succeeded_(false)
   , timed_out_(false)
-{   }
+{	}
+
+
+request_with_timeout::~request_with_timeout ()
+{	}
 
 
 void request_with_timeout::dispatch_via (transport::delivery_provider& deliver)
@@ -33,19 +39,23 @@ void request_with_timeout::dispatch_via (transport::delivery_provider& deliver)
 	auto on_response = std::bind(&request_with_timeout::on_response, shared_from_this(), _1, _2, _3);
 	terminate_request_ = deliver(request_data_, on_response);
 
-	timeout_.expires_from_now(boost::posix_time::milliseconds(timeout_length_.count()));
-	auto on_timeout = std::bind(&request_with_timeout::on_timeout, shared_from_this(), _1);
-	timeout_.async_wait(on_timeout);
+	auto fail_request = std::bind(&request_with_timeout::on_timeout, shared_from_this(), _1);
+	timer_->run_on_timeout(timeout_length_, fail_request);
 }
 
 
 void request_with_timeout::on_response (std::error_code error, size_t bytes_received, const std::string& raw_data)
 {
+	// Retain myself, for safety (strange external implementations may forget me
+	// early, e.g. mocked transports)
+	//
+	auto self = shared_from_this();
+
 	assert(not succeeded_ and (!! terminate_request_));
 	unique_lock<mutex> serialize(this->mutex_);
 
 	// Whatever happened, it constitutes activity. Stop the timeout timer.
-	timeout_.cancel();
+	timer_->cancel();
 
 	bool error_condition = (timed_out_ or error);
 	if (not error_condition) {
@@ -54,9 +64,8 @@ void request_with_timeout::on_response (std::error_code error, size_t bytes_rece
 			succeeded_ = true;
 			terminate_request_.reset();
 		} else {
-			timeout_.expires_from_now(boost::posix_time::milliseconds(timeout_length_.count()));
-			auto on_timeout = std::bind(&request_with_timeout::on_timeout, shared_from_this(), _1);
-			timeout_.async_wait(on_timeout);
+			auto fail_request = std::bind(&request_with_timeout::on_timeout, shared_from_this(), _1);
+			timer_->run_on_timeout(timeout_length_, fail_request);
 		}
 	} else {
 		(*terminate_request_)(true);
@@ -70,8 +79,13 @@ void request_with_timeout::on_response (std::error_code error, size_t bytes_rece
 }
 
 
-void request_with_timeout::on_timeout (const boost::system::error_code& error)
+void request_with_timeout::on_timeout (const std::error_code& error)
 {
+	// Retain myself, for safety (strange external implementations may forget me
+	// early, e.g. mocked transports)
+	//
+	auto self = shared_from_this();
+
 	assert(not timed_out_);
 	unique_lock<mutex> serialize(this->mutex_);
 	timed_out_ = not error;

@@ -4,6 +4,12 @@
 #include <test/fixtures/log/logs_test_name.hxx>
 #include <test/mocks/transport.hxx>
 
+namespace riak {
+    namespace mock {
+        namespace utility { class timer_factory; }
+    }
+}
+
 //=============================================================================
 namespace riak {
     namespace test {
@@ -17,7 +23,7 @@ struct riak_client_mocked_for_two_requests
     ~riak_client_mocked_for_two_requests ();
 
     mock::transport::device transport;
-    boost::asio::io_service ios;
+    std::shared_ptr<mock::utility::timer_factory> timer_factory_mock;
     riak::client client;
     std::string received_request_1;
     std::string received_request_2;

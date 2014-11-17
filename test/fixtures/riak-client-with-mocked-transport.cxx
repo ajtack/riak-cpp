@@ -1,5 +1,6 @@
-#include <gtest/gtest.h>
+
 #include <test/fixtures/riak-client-with-mocked-transport.hxx>
+#include <test/mocks/utility/timer_factory.hxx>
 
 using namespace ::testing;
 
@@ -25,7 +26,13 @@ using std::placeholders::_2;
 using std::placeholders::_3;
 
 riak_client_with_mocked_transport::riak_client_with_mocked_transport ()
-  : client(std::bind(&mock::transport::device::deliver, &transport, _1, _2), &no_sibling_resolution, ios)
+  : timer_factory_mock(new NiceMock<mock::utility::timer_factory>)
+  , client( std::bind(&mock::transport::device::deliver, &transport, _1, _2),
+            &no_sibling_resolution,
+            timer_factory_mock,
+            client::failure_defaults,
+            client::access_override_defaults
+          )
   , response_handler(std::bind(&::riak::mock::get_request::response_handler::execute, &response_handler_mock, _1, _2, _3))
 {
     typedef mock::transport::device::option_to_terminate_request mock_close_option;

@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 #include <test/fixtures/riak-client-mocked-for-two-requests.hxx>
+#include <test/mocks/utility/timer_factory.hxx>
 
 using namespace ::testing;
 
@@ -24,7 +25,8 @@ using std::placeholders::_1;
 using std::placeholders::_2;
 
 riak_client_mocked_for_two_requests::riak_client_mocked_for_two_requests ()
-  : client(std::bind(&mock::transport::device::deliver, &transport, _1, _2), &no_sibling_resolution, ios)
+  :	timer_factory_mock(new NiceMock<mock::utility::timer_factory>)
+  ,	client(std::bind(&mock::transport::device::deliver, &transport, _1, _2), &no_sibling_resolution, timer_factory_mock)
 {
 	InSequence s;
 	typedef mock::transport::device::option_to_terminate_request mock_close_option;

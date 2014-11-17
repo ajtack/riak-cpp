@@ -1,5 +1,6 @@
 #include <functional>
 #include <test/fixtures/get_with_siblings.hxx>
+#include <test/mocks/utility/timer_factory.hxx>
 
 //=============================================================================
 namespace riak {
@@ -13,9 +14,10 @@ using std::placeholders::_2;
 using std::placeholders::_3;
 
 get_with_siblings::get_with_siblings ()
-  : client(std::bind(&mock::transport::device::deliver, &transport, _1, _2),
+  : timer_factory_mock(new NiceMock<mock::utility::timer_factory>)
+  , client(std::bind(&mock::transport::device::deliver, &transport, _1, _2),
            std::bind(&mock::sibling_resolution::evaluate, &sibling_resolution, _1),
-           ios)
+           timer_factory_mock)
   , response_handler(std::bind(&::riak::mock::get_request::response_handler::execute, &response_handler_mock, _1, _2, _3))
 {
     typedef mock::transport::device::option_to_terminate_request mock_close_option;

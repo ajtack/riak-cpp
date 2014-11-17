@@ -7,6 +7,8 @@
 #include <gtest/gtest.h>
 #include <riak/message.hxx>
 #include <test/fixtures/deleting_client.hxx>
+#include <test/mocks/utility/timer.hxx>
+#include <test/mocks/utility/timer_factory.hxx>
 #include <system_error>
 
 #if RIAK_CPP_LOGGING_ENABLED
@@ -37,6 +39,25 @@ TEST_F(deleting_client, client_receives_socket_errors)
 
     std::string garbage("uhetnaoutaenosueosaueoas");
     send_from_server(std::make_error_code(std::errc::connection_reset), garbage.size(), garbage);
+}
+
+
+TEST_F(deleting_client, client_reports_timeouts)
+{
+    std::function<void(const std::error_code&)> the_timer_callback;
+    std::unique_ptr<mock::utility::timer> the_request_timer(new NiceMock<mock::utility::timer>);
+    ON_CALL(*the_request_timer, run_on_timeout(_, _)).WillByDefault(SaveArg<1>(&the_timer_callback));
+    ON_CALL(*timer_factory_mock, __create()).WillByDefault(Return(the_request_timer.release()));
+
+    client.delete_object("x", "y", response_handler);
+
+    // TODO: this should also happen!
+    // EXPECT_CALL(closure_signal, exercise());
+
+    // Per riak::utility::timer, a timeout callback with no error means the request has timed out.
+    //
+    EXPECT_CALL(response_handler_mock, execute(Eq(riak::make_error_code(riak::communication_failure::response_timeout))));
+    the_timer_callback(std::error_code());
 }
 
 

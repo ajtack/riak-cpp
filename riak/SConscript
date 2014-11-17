@@ -1,9 +1,11 @@
 Import('env')
 
 headers = Glob('*.hxx') + \
+          Glob('*/*.hxx') + \
           Glob('*.pb.h') + \
           Glob('transports/*/*.hxx')
 sources = Glob('*.cxx') + \
+          Glob('*/*.cxx') + \
           Glob('transports/*/*.cxx')
 generate_protobuf_interfaces = Action("protoc $SOURCE --cpp_out=.", '$PROTOCCOMSTR')
 env.Command('riakclient.pb.h', 'riakclient.proto', generate_protobuf_interfaces)

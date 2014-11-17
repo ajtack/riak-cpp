@@ -97,15 +97,17 @@ class client::request_runner
 client::client (
         const transport::delivery_provider&& d,
         const sibling_resolution&& sr,
-        boost::asio::io_service& ios,
+        const std::shared_ptr<utility::timer_factory>& timer_factory,
         const request_failure_parameters& fp,
         const object_access_parameters& ao)
   : deliver_request_(d),
     resolve_siblings_(sr),
+    timer_factory_(timer_factory),
     access_overrides_(ao),
-    request_failure_defaults_(fp),
-    ios_(ios)
-{   }
+    request_failure_defaults_(fp)
+{
+    assert (!! timer_factory_);
+}
 
 
 void client::delete_object (const key& bucket, const key& k, delete_response_handler h)
@@ -136,7 +138,7 @@ void client::delete_object (const key& bucket, const key& k, delete_response_han
             query.to_string(),
             request_failure_defaults_.response_timeout,
             handle_buffered_response,
-            ios_);
+            *timer_factory_);
     
     wire_request->dispatch_via(deliver_request_);
 }
@@ -213,7 +215,7 @@ void client::request_runner::run_get_request (
             query.to_string(),
             request_context_.request_failure_defaults.response_timeout,
             handle_buffered_response,
-            client_.ios_);
+            *client_.timer_factory_);
     
     wire_request->dispatch_via(client_.deliver_request_);
 }
@@ -445,7 +447,7 @@ void client::request_runner::send_put_request (const RpbPutReq& r, message::hand
             query.to_string(),
             request_context_.request_failure_defaults.response_timeout,
             handle_buffered_put_response,
-            client_.ios_);
+            *client_.timer_factory_);
     
     wire_request->dispatch_via(client_.deliver_request_);
 }
