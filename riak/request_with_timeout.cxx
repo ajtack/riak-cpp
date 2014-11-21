@@ -17,8 +17,22 @@ using std::placeholders::_3;
 request_with_timeout::request_with_timeout (
 		const std::string& data,
 		std::chrono::milliseconds timeout,
-		message::buffering_handler& h,
+		message::buffering_handler h,
 		utility::timer_factory& timer_factory)
+  : timeout_length_(timeout)
+  , timer_(timer_factory.create())
+  , response_callback_(h)
+  , request_data_(data)
+  , succeeded_(false)
+  , timed_out_(false)
+{	}
+
+
+request_with_timeout::request_with_timeout (
+		const std::string& data,
+		std::chrono::milliseconds timeout,
+		message::buffering_handler h,
+		utility::timer_factory&& timer_factory)
   : timeout_length_(timeout)
   , timer_(timer_factory.create())
   , response_callback_(h)
@@ -32,7 +46,7 @@ request_with_timeout::~request_with_timeout ()
 {	}
 
 
-void request_with_timeout::dispatch_via (transport::delivery_provider& deliver)
+void request_with_timeout::dispatch_via (const transport::delivery_provider& deliver)
 {
 	// The request can only be sent once.
 	assert(not terminate_request_ and not succeeded_ and not timed_out_);
@@ -51,30 +65,39 @@ void request_with_timeout::on_response (std::error_code error, size_t bytes_rece
 	//
 	auto self = shared_from_this();
 
-	assert(not succeeded_ and (!! terminate_request_));
+	// The response should only arrive once, and exactly once.
+	//
+	assert(not succeeded_);
 	unique_lock<mutex> serialize(this->mutex_);
 
 	// Whatever happened, it constitutes activity. Stop the timeout timer.
+	//
 	timer_->cancel();
 
-	bool error_condition = (timed_out_ or error);
-	if (not error_condition) {
-		if (response_callback_(std::error_code(), bytes_received, raw_data)) {
-			(*terminate_request_)(false);
-			succeeded_ = true;
-			terminate_request_.reset();
+	if (this->is_live()) {
+		bool error_condition = (timed_out_ or error);
+		if (not error_condition) {
+			if (response_callback_(std::error_code(), bytes_received, raw_data)) {
+				(*terminate_request_)(false);
+				succeeded_ = true;
+				terminate_request_.reset();
+			} else {
+				auto fail_request = std::bind(&request_with_timeout::on_timeout, shared_from_this(), _1);
+				timer_->run_on_timeout(timeout_length_, fail_request);
+			}
 		} else {
-			auto fail_request = std::bind(&request_with_timeout::on_timeout, shared_from_this(), _1);
-			timer_->run_on_timeout(timeout_length_, fail_request);
+			(*terminate_request_)(true);
+
+			// Timeout already satisfied the response callback.
+			if (not timed_out_)
+				response_callback_(error, 0, raw_data);
+
+			terminate_request_.reset();
 		}
 	} else {
-		(*terminate_request_)(true);
-
-		// Timeout already satisfied the response callback.
-		if (not timed_out_)
-			response_callback_(error, 0, raw_data);
-
-		terminate_request_.reset();
+		// The response should only arrive once, and exactly once.
+		//
+		assert(timed_out_);
 	}
 }
 
@@ -89,11 +112,18 @@ void request_with_timeout::on_timeout (const std::error_code& error)
 	assert(not timed_out_);
 	unique_lock<mutex> serialize(this->mutex_);
 	timed_out_ = not error;
-	if (timed_out_) {
+	if (is_live() and timed_out_) {
 		auto timeout_error = make_error_code(communication_failure::response_timeout);
 		response_callback_(timeout_error, 0, "");
 		terminate_request_.reset();
+	} else {
+		// Either canceled or raced with a last-minute response.
 	}
+}
+
+
+bool request_with_timeout::is_live () const {
+	return !! terminate_request_;
 }
 
 //=============================================================================

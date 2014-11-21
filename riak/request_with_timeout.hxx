@@ -36,8 +36,14 @@ class request_with_timeout
 	request_with_timeout (
 			const std::string& data,
 			std::chrono::milliseconds timeout,
-			message::buffering_handler& h,
+			message::buffering_handler h,
 			utility::timer_factory& timer_factory);
+
+	request_with_timeout (
+			const std::string& data,
+			std::chrono::milliseconds timeout,
+			message::buffering_handler h,
+			utility::timer_factory&& timer_factory);
 
 	~request_with_timeout ();
 	
@@ -46,11 +52,13 @@ class request_with_timeout
 	 * \pre There must exist a shared pointer to this request at the time of dispatch. It may be
 	 *	 reset as soon as the request is dispatched.
 	 */
-	void dispatch_via (transport::delivery_provider& p);
+	void dispatch_via (const transport::delivery_provider& p);
 
   private:
 	void on_response (std::error_code, std::size_t, const std::string&);
 	void on_timeout (const std::error_code&);
+
+	bool is_live () const;
 	  
 	mutable boost::mutex mutex_;
 	std::chrono::milliseconds timeout_length_;
