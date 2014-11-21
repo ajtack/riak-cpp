@@ -15,7 +15,7 @@ using std::placeholders::_3;
 
 get_with_siblings::get_with_siblings ()
   : timer_factory_mock(new NiceMock<mock::utility::timer_factory>)
-  , client(std::bind(&mock::transport::device::deliver, &transport, _1, _2),
+  , client(transport.as_delivery_provider(),
            std::bind(&mock::sibling_resolution::evaluate, &sibling_resolution, _1),
            timer_factory_mock)
   , response_handler(std::bind(&::riak::mock::get_request::response_handler::execute, &response_handler_mock, _1, _2, _3))

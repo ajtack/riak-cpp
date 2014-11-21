@@ -18,6 +18,15 @@ public:
             ::riak::transport::option_to_terminate_request(
                     const std::string&,
                     ::riak::transport::response_handler) );
+
+    /*!
+     * Shorthand for shaping this mock in the general form required by 
+     * riak tools. Makes no attempt at refining the lifetime of the mock.
+     */
+    ::riak::transport::delivery_provider as_delivery_provider () {
+        using namespace std::placeholders;
+        return std::bind(&device::deliver, this, _1, _2);
+    }
 };
 
 class device::option_to_terminate_request

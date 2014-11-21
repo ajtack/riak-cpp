@@ -26,7 +26,7 @@ using std::placeholders::_2;
 
 riak_client_mocked_for_two_requests::riak_client_mocked_for_two_requests ()
   :	timer_factory_mock(new NiceMock<mock::utility::timer_factory>)
-  ,	client(std::bind(&mock::transport::device::deliver, &transport, _1, _2), &no_sibling_resolution, timer_factory_mock)
+  ,	client(transport.as_delivery_provider(), &no_sibling_resolution, timer_factory_mock)
 {
 	InSequence s;
 	typedef mock::transport::device::option_to_terminate_request mock_close_option;

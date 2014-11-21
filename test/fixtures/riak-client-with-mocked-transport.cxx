@@ -27,7 +27,7 @@ using std::placeholders::_3;
 
 riak_client_with_mocked_transport::riak_client_with_mocked_transport ()
   : timer_factory_mock(new NiceMock<mock::utility::timer_factory>)
-  , client( std::bind(&mock::transport::device::deliver, &transport, _1, _2),
+  , client( transport.as_delivery_provider(),
             &no_sibling_resolution,
             timer_factory_mock,
             client::failure_defaults,
