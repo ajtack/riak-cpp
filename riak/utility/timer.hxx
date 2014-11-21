@@ -19,16 +19,18 @@ namespace riak {
 class timer
 {
   public:
+	typedef std::function<void(const std::error_code&)> callback;
+
 	virtual ~timer ()
 	{	}
 
 	/*!
 	 * Schedules an operation to occur after the given timeout.
-	 * \param callback will be invoked without error if the timer expires, with
+	 * \param c will be invoked without error if the timer expires, with
 	 *     error if the timer is canceled, and otherwise not invoked at all.
 	 */
 	virtual
-	void run_on_timeout (const std::chrono::milliseconds& timeout, std::function<void(const std::error_code&)> callback) = 0;
+	void run_on_timeout (const std::chrono::milliseconds& timeout, callback c) = 0;
 
 	/*!
 	 * Remove all previously scheduled events from this timer. Note that any callback
