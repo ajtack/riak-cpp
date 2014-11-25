@@ -70,7 +70,7 @@ TEST(request_timeout_handling, when_response_is_first_timeout_is_ignored) {
 	std::size_t received = 0;
 
 	using namespace std::placeholders;
-	EXPECT_CALL(response_handler, handle(std::error_code(), Gt(0), _))
+	EXPECT_CALL(response_handler, handle(std::error_code(), Gt(0u), _))
 		.Times(AtLeast(1))
 		.WillRepeatedly(Invoke(std::bind(is_ge_when_added_to_handler, _1, _2, _3, std::ref(received), sent)));
 
@@ -194,7 +194,7 @@ TEST(request_timeout_handling, response_is_reported_properly) {
 	using namespace std::placeholders;
 	const std::size_t sent = 10;
 	std::size_t received = 0;
-	EXPECT_CALL(response_handler, handle(std::error_code(), Gt(0), _))
+	EXPECT_CALL(response_handler, handle(std::error_code(), Gt(0u), _))
 		.Times(AtLeast(1))
 		.WillRepeatedly(Invoke(std::bind(is_ge_when_added_to_handler, _1, _2, _3, std::ref(received), sent)));
 
