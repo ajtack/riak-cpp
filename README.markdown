@@ -1,6 +1,6 @@
 Riak-Cpp (better name pending™) is an asychronous [Riak](http://basho.com/products/riak-overview/) client library for advanced C++ compilers.
 
-[![Build Status](https://travis-ci.org/ajtack/riak-cpp.svg?branch=master)](https://travis-ci.org/ajtack/riak-cpp)
+[![Build Status](https://travis-ci.org/ajtack/riak-cpp.svg?branch=26-assertion-on-timeout)](https://travis-ci.org/ajtack/riak-cpp)
 
 Requirements
 ============
