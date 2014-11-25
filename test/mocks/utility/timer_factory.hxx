@@ -16,8 +16,8 @@ public:
 	timer_factory ();
 	~timer_factory ();
 
-	virtual std::unique_ptr<::riak::utility::timer> create () {
-		return std::unique_ptr<::riak::utility::timer>(__create());
+	virtual std::unique_ptr< ::riak::utility::timer> create () {
+		return std::unique_ptr< ::riak::utility::timer>(__create());
 	}
 
 	// Google decided they don't like unique_ptr, so the rest of us are stuck doing this.
